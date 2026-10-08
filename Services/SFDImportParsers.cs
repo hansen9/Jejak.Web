@@ -5,12 +5,12 @@ using SFD.Models;
 
 namespace SFD.Services;
 
-public class ImportException(string message) : Exception(message);
+public class SFDImportException(string message) : Exception(message);
 
-public record ImportedRoute(string Name, string Area, List<LatLon> Coordinates);
-public record ImportedPoint(double Latitude, double Longitude, double Speed, double Bearing, DateTime RecordedAtUtc);
+public record SFDImportedRoute(string Name, string Area, List<SFDLatLon> Coordinates);
+public record SFDImportedPoint(double Latitude, double Longitude, double Speed, double Bearing, DateTime RecordedAtUtc);
 
-public static partial class ImportParsers
+public static partial class SFDImportParsers
 {
     public const int MaxFileBytes = 5 * 1024 * 1024;
     const int MaxRoutes = 100, MaxPointsPerRoute = 10_000, MaxGpsRows = 5_000;
@@ -19,11 +19,11 @@ public static partial class ImportParsers
     private static partial Regex ZoneSuffix();
 
     /// <summary>GeoJSON Feature/FeatureCollection/geometry containing LineString or MultiLineString. Coordinates are [lon, lat].</summary>
-    public static List<ImportedRoute> ParseGeoJson(string text)
+    public static List<SFDImportedRoute> ParseGeoJson(string text)
     {
         JsonDocument doc;
         try { doc = JsonDocument.Parse(text); }
-        catch (JsonException) { throw new ImportException("Berkas bukan JSON yang valid."); }
+        catch (JsonException) { throw new SFDImportException("Berkas bukan JSON yang valid."); }
 
         using (doc)
         {
@@ -32,12 +32,12 @@ public static partial class ImportParsers
             List<JsonElement> features;
             if (type == "FeatureCollection")
             {
-                if (!root.TryGetProperty("features", out var arr) || arr.ValueKind != JsonValueKind.Array) throw new ImportException("Struktur GeoJSON tidak valid.");
+                if (!root.TryGetProperty("features", out var arr) || arr.ValueKind != JsonValueKind.Array) throw new SFDImportException("Struktur GeoJSON tidak valid.");
                 features = arr.EnumerateArray().ToList();
             }
             else features = [root];
 
-            var result = new List<ImportedRoute>();
+            var result = new List<SFDImportedRoute>();
             for (var index = 0; index < features.Count; index++)
             {
                 var feature = features[index];
@@ -46,7 +46,7 @@ public static partial class ImportParsers
                 if (geometry.ValueKind != JsonValueKind.Object) continue;
                 var gType = Str(geometry, "type");
                 if (gType is not ("LineString" or "MultiLineString")) continue;
-                if (!geometry.TryGetProperty("coordinates", out var coords) || coords.ValueKind != JsonValueKind.Array) throw new ImportException("Koordinat rute tidak valid.");
+                if (!geometry.TryGetProperty("coordinates", out var coords) || coords.ValueKind != JsonValueKind.Array) throw new SFDImportException("Koordinat rute tidak valid.");
 
                 var lines = gType == "LineString" ? [coords] : coords.EnumerateArray().ToList();
                 var props = feature.ValueKind == JsonValueKind.Object && feature.TryGetProperty("properties", out var p) && p.ValueKind == JsonValueKind.Object ? p : default;
@@ -56,7 +56,7 @@ public static partial class ImportParsers
                 for (var lineIndex = 0; lineIndex < lines.Count; lineIndex++)
                 {
                     var line = lines[lineIndex];
-                    var points = new List<LatLon>();
+                    var points = new List<SFDLatLon>();
                     if (line.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var pt in line.EnumerateArray())
@@ -68,18 +68,18 @@ public static partial class ImportParsers
                     }
                     if (points.Count < 2) throw LineError();
                     var name = baseName + (lines.Count > 1 ? $" ({lineIndex + 1})" : "");
-                    result.Add(new ImportedRoute(Clip(name, 100)!, area, points));
+                    result.Add(new SFDImportedRoute(Clip(name, 100)!, area, points));
                 }
             }
-            if (result.Count == 0) throw new ImportException("Tidak ada LineString atau MultiLineString di berkas ini.");
-            if (result.Count > MaxRoutes) throw new ImportException("Maksimal 100 rute dalam satu impor.");
+            if (result.Count == 0) throw new SFDImportException("Tidak ada LineString atau MultiLineString di berkas ini.");
+            if (result.Count > MaxRoutes) throw new SFDImportException("Maksimal 100 rute dalam satu impor.");
             return result;
         }
     }
 
-    static ImportException LineError() => new("Setiap rute membutuhkan 2–10.000 koordinat [longitude, latitude] yang valid.");
+    static SFDImportException LineError() => new("Setiap rute membutuhkan 2–10.000 koordinat [longitude, latitude] yang valid.");
 
-    static bool TryCoordinate(JsonElement pt, out LatLon ll)
+    static bool TryCoordinate(JsonElement pt, out SFDLatLon ll)
     {
         ll = default;
         if (pt.ValueKind != JsonValueKind.Array || pt.GetArrayLength() < 2) return false;
@@ -89,7 +89,7 @@ public static partial class ImportParsers
         if (first.ValueKind != JsonValueKind.Number || second.ValueKind != JsonValueKind.Number) return false;
         double lon = first.GetDouble(), lat = second.GetDouble();
         if (!double.IsFinite(lon) || !double.IsFinite(lat) || Math.Abs(lon) > 180 || Math.Abs(lat) > 90) return false;
-        ll = new LatLon(lat, lon);
+        ll = new SFDLatLon(lat, lon);
         return true;
     }
 
@@ -99,19 +99,19 @@ public static partial class ImportParsers
     static string? Clip(string? s, int max) => s is null ? null : s.Length <= max ? s : s[..max];
 
     /// <summary>CSV with latitude, longitude, recorded_at (ISO with zone); speed and bearing optional.</summary>
-    public static List<ImportedPoint> ParseGpsCsv(string text)
+    public static List<SFDImportedPoint> ParseGpsCsv(string text)
     {
         var lines = text.Trim().Split(["\r\n", "\n"], StringSplitOptions.None);
         var delimiter = lines[0].Contains(';') ? ';' : ',';
         var headers = lines[0].TrimStart('﻿').Split(delimiter).Select(h => h.Trim().ToLowerInvariant()).ToList();
         if (!new[] { "latitude", "longitude", "recorded_at" }.All(headers.Contains))
-            throw new ImportException("CSV wajib memiliki kolom latitude, longitude, recorded_at.");
+            throw new SFDImportException("CSV wajib memiliki kolom latitude, longitude, recorded_at.");
 
-        var rows = new List<ImportedPoint>();
+        var rows = new List<SFDImportedPoint>();
         for (var i = 1; i < lines.Length; i++)
         {
             if (string.IsNullOrWhiteSpace(lines[i])) continue;
-            if (rows.Count >= MaxGpsRows) throw new ImportException("CSV harus memiliki 1–5.000 titik GPS.");
+            if (rows.Count >= MaxGpsRows) throw new SFDImportException("CSV harus memiliki 1–5.000 titik GPS.");
             var cells = lines[i].Split(delimiter).Select(c => c.Trim().Trim('"')).ToList();
             string Get(string key) { var idx = headers.IndexOf(key); return idx >= 0 && idx < cells.Count ? cells[idx] : ""; }
 
@@ -126,11 +126,11 @@ public static partial class ImportParsers
             if (!ok || !double.IsFinite(lat) || !double.IsFinite(lon) || Math.Abs(lat) > 90 || Math.Abs(lon) > 180
                 || !double.IsFinite(speed) || speed < 0 || !double.IsFinite(bearing) || bearing < 0 || bearing > 360
                 || !parsed || !ZoneSuffix().IsMatch(time))
-                throw new ImportException($"Baris {i + 1} tidak valid. Gunakan waktu ISO dengan zona waktu, misalnya 2026-10-07T09:00:00+07:00.");
+                throw new SFDImportException($"Baris {i + 1} tidak valid. Gunakan waktu ISO dengan zona waktu, misalnya 2026-10-07T09:00:00+07:00.");
 
-            rows.Add(new ImportedPoint(lat, lon, speed, bearing, at.UtcDateTime));
+            rows.Add(new SFDImportedPoint(lat, lon, speed, bearing, at.UtcDateTime));
         }
-        if (rows.Count == 0) throw new ImportException("CSV harus memiliki 1–5.000 titik GPS.");
+        if (rows.Count == 0) throw new SFDImportException("CSV harus memiliki 1–5.000 titik GPS.");
         return rows;
     }
 }

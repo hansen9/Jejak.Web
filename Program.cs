@@ -12,12 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<SFDAppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=sfd.db"));
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<TrackingService>();
-builder.Services.AddSingleton<IconSet>();
+builder.Services.AddScoped<SFDTrackingService>();
+builder.Services.AddSingleton<SFDIconSet>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -50,7 +50,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<SFDAppDbContext>();
     db.Database.EnsureCreated();
 }
 

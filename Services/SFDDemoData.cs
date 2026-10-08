@@ -3,16 +3,16 @@ using SFD.Models;
 namespace SFD.Services;
 
 /// <summary>Fixed sample team for the signed-out demo. Coverage on demo routes is illustrative.</summary>
-public static class DemoData
+public static class SFDDemoData
 {
-    static LatLon[] P(params double[][] pts) => pts.Select(p => new LatLon(p[0], p[1])).ToArray();
+    static SFDLatLon[] P(params double[][] pts) => pts.Select(p => new SFDLatLon(p[0], p[1])).ToArray();
 
-    static MemberDto M(string id, string name, string area, string color, double[] pos, double speed, double bearing, double distance,
+    static SFDMemberDto M(string id, string name, string area, string color, double[] pos, double speed, double bearing, double distance,
         string status, int battery, string lastSeen, double[][] trace, double[] hours) =>
-        new(id, name, TrackingBuilder.Initials(name), area, color, null, new LatLon(pos[0], pos[1]), speed, bearing, distance, status,
+        new(id, name, SFDTrackingBuilder.Initials(name), area, color, null, new SFDLatLon(pos[0], pos[1]), speed, bearing, distance, status,
             battery, lastSeen, P(trace).ToList(), hours);
 
-    public static readonly IReadOnlyList<MemberDto> Members =
+    public static readonly IReadOnlyList<SFDMemberDto> Members =
     [
         M("demo-1", "Andi Pratama", "Kebayoran Baru", "#815796", [-6.2391, 106.8004], 24, 45, 28.4, "bergerak", 82, "14.32 WIB",
             [[-6.2591, 106.8001], [-6.2552, 106.8000], [-6.2490, 106.8003], [-6.2440, 106.8005], [-6.2391, 106.8004]], [0, 1.2, 2.6, 4.0, 3.8, 2.7, 1.6, 3.5, 4.2, 2.3, 1.4, 1.1]),
@@ -32,7 +32,7 @@ public static class DemoData
             [[-6.2255, 106.8335], [-6.2290, 106.8345], [-6.2331, 106.8374]], [0, 0.3, 0.6, 1.0, 1.2, 0.7, 0.4, 0.8, 0.8, 0.4, 0.2, 0.1]),
     ];
 
-    public static readonly IReadOnlyList<RouteSource> Routes =
+    public static readonly IReadOnlyList<SFDRouteSource> Routes =
     [
         new("route-1", "Koridor Kebayoran", "Kebayoran Baru", P([-6.2591, 106.8001], [-6.2490, 106.8003], [-6.2391, 106.8004], [-6.2310, 106.8007], [-6.2244, 106.8075], [-6.2212, 106.8125]).ToList(), 0.78),
         new("route-2", "Koridor Senayan", "Senayan", P([-6.2350, 106.7964], [-6.2308, 106.7964], [-6.2270, 106.7990], [-6.2190, 106.8050], [-6.2163, 106.8028], [-6.2095, 106.8013]).ToList(), 0.85),
@@ -45,11 +45,11 @@ public static class DemoData
     ];
 
     /// <summary>The demo describes "today"; any other date has no demo data, as in the original dashboard.</summary>
-    public static TrackingDto Build(string date)
+    public static SFDTrackingDto Build(string date)
     {
-        var visible = date == TrackingBuilder.Today();
+        var visible = date == SFDTrackingBuilder.Today();
         var members = visible ? Members.ToList() : [];
-        var routes = visible ? TrackingBuilder.Routes(Routes, members, demo: true) : [];
-        return new TrackingDto(true, date, "14.32 WIB", members, routes);
+        var routes = visible ? SFDTrackingBuilder.Routes(Routes, members, demo: true) : [];
+        return new SFDTrackingDto(true, date, "14.32 WIB", members, routes);
     }
 }

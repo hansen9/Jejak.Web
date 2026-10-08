@@ -1,0 +1,126 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var title = ViewData["Title"] as string ?? "Leader Dashboard";
+    var description = ViewData["Description"] as string ?? "";
+    var noIndex = ViewData["NoIndex"] is true;
+    var canonical = SFDSiteOrigin.From(Context.Request) + Context.Request.Path.Value;
+    var csrf = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    @if (description.Length > 0)
+    {
+        <meta name="description" content="@description" />
+        <meta property="og:description" content="@description" />
+        <meta name="twitter:description" content="@description" />
+    }
+    <meta property="og:title" content="@title" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="@title" />
+    @if (noIndex)
+    {
+        <meta name="robots" content="noindex" />
+    }
+    else
+    {
+        <link rel="canonical" href="@canonical" />
+        <meta property="og:url" content="@canonical" />
+    }
+    <meta name="csrf-token" content="@csrf" />
+    <link rel="icon" href="~/favicon.ico" sizes="32x32" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;450;500;550;600;650;700;750;800&display=swap" />
+    <link rel="stylesheet" href="~/lib/leaflet/leaflet.css" />
+    <style>
+        :root { --background: 250 14% 97%; --foreground: 267 17% 20%; --card: 0 0% 100%; --card-foreground: 267 17% 20%; --popover: 0 0% 100%; --popover-foreground: 267 17% 20%; --primary: 275 23% 37%; --primary-foreground: 0 0% 100%; --secondary: 270 20% 95%; --secondary-foreground: 275 23% 37%; --muted: 260 13% 95%; --muted-foreground: 260 6% 47%; --accent: 271 24% 94%; --accent-foreground: 275 23% 37%; --destructive: 0 60% 48%; --destructive-foreground: 0 0% 100%; --border: 260 13% 91%; --input: 260 13% 88%; --ring: 275 23% 37%; --radius: 0.75rem; --plum: #705183; --plum-dark: #4f395d; --plum-light: #eee8f2; --ink: #302a38; --subtle: #807988; --copper: #b98565; --copper-light: #f6eee8; --canvas: #f7f6f9; --paper: #ffffff; --sidebar: #fcfbfd; --line: #ece9ef; --green: #648b78; --green-light: #eef5f0; --blush: #e5d4d7; --donut-rest: #eadde0; --error: #b65757; --error-bg: #fbefef; --font-body: 'Manrope', sans-serif; }
+        * { border-color: hsl(var(--border)); }
+        body { margin: 0; font-family: var(--font-body); background: var(--canvas); color: var(--ink); overflow-x: clip; font-size: 13px; -webkit-font-smoothing: antialiased; }
+        button, input, select, textarea { font: inherit; }
+        button, a, input, select { -webkit-tap-highlight-color: transparent; }
+        button { cursor: pointer; }
+        button:disabled { opacity: .5; cursor: not-allowed; }
+        a { color: inherit; text-decoration: none; }
+        button, a, input, select { outline-offset: 4px; }
+        button:focus-visible, a:focus-visible { outline: 2px solid var(--plum); }
+        input:focus, select:focus { outline: 2px solid var(--plum-light); border-color: var(--plum); }
+        button { transition: background .18s ease-out, color .18s ease-out, transform .18s ease-out; }
+        button:active:not(:disabled) { transform: scale(.98); }
+        h1, h2, h3, p { margin: 0; }
+        svg { flex-shrink: 0; }
+        ::selection { background: var(--plum-light); color: var(--plum-dark); }
+        input::placeholder { color: #97919e; }
+        .brand { display: inline-flex; align-items: center; font-size: 22px; font-weight: 800; letter-spacing: -0.8px; line-height: 1; }
+        .brand-symbol { display: inline-flex; align-items: center; justify-content: center; color: var(--plum); margin-right: 9px; }
+        .brand-dot { color: var(--copper); }
+        .icon-button { display: inline-flex; align-items: center; justify-content: center; padding: 5px; min-width: 29px; min-height: 29px; background: transparent; border: none; border-radius: 5px; color: var(--subtle); }
+        .icon-button:hover { color: var(--plum); background: var(--plum-light); }
+        .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--copper); font-size: 8.5px; letter-spacing: 1.65px; font-weight: 700; margin-bottom: 9px; }
+        .eyebrow>span { width: 13px; height: 1px; background: var(--copper); }
+        .button-primary, .button-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 37px; padding: 9px 13px; border-radius: 7px; border: 1px solid transparent; font-size: 10.5px; font-weight: 650; white-space: nowrap; }
+        .button-primary { background: var(--plum); color: white; }
+        .button-primary:hover { background: var(--plum-dark); }
+        .button-secondary { background: var(--paper); border-color: #e6e0eb; color: #6a5877; }
+        .button-secondary:hover { background: var(--plum-light); border-color: #dacee3; }
+        .button-text { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: none; border: none; color: var(--plum); padding: 8px; font-size: 12px; }
+        .button-text:hover { text-decoration: underline; }
+        .wide { width: 100%; min-height: 43px; font-size: 12px; }
+        .status-dot { display: inline-block; width: 5px; height: 5px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+        .status-dot.copper { background: var(--copper); }
+        .status-dot.gray { background: #a49caa; }
+        .panel { border-radius: 11px; background: var(--paper); overflow: hidden; }
+        .status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 7.5px; background: var(--green-light); color: #79917f; border-radius: 4px; padding: 4px 6px; }
+        .status-pill>i { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+        .status-pill.berhenti { background: #f8efe8; color: #bf9473; }
+        .status-pill.offline { background: #f1edf5; color: #ad98b9; }
+        .dialog-symbol { width: 47px; height: 47px; background: var(--plum-light); display: flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--plum); margin-bottom: 3px; }
+        .app-form { display: flex; flex-direction: column; gap: 15px; margin-top: 5px; }
+        .app-form label, .form-label { display: flex; flex-direction: column; gap: 7px; font-size: 11px; font-weight: 600; color: #846393; }
+        .app-form input:not([type='file']), .app-form select { min-height: 42px; padding: 10px 12px; border: 1px solid #e6dceb; color: #7b6089; background: #fefcfe; border-radius: 7px; font-size: 11px; font-weight: 450; }
+        .app-form input::placeholder { color: #c1aecb; }
+        .form-error { font-size: 10px; line-height: 1.7; color: var(--error); background: var(--error-bg); padding: 10px 12px; border-radius: 7px; }
+        .form-success { display: flex; align-items: center; gap: 6px; font-size: 10px; line-height: 1.7; color: var(--green); background: var(--green-light); padding: 10px 12px; border-radius: 7px; }
+        .info-box { display: flex; align-items: flex-start; gap: 9px; background: #f7f3fa; padding: 12px; border-radius: 7px; color: #a28bb0; font-size: 10px; line-height: 1.8; }
+        .info-box>svg { margin-top: 2px; }
+        .info-box a { color: var(--plum); text-decoration: underline; }
+        .spin, .spinning>svg { animation: spin 1.8s ease-in-out infinite; }
+        @@keyframes spin { to { transform: rotate(360deg); } }
+        .eyebrow { font-size: 9px; }
+        .status-pill { font-size: 8px; }
+        .status-pill.bergerak { color: #53745e; }
+        .status-pill.berhenti { color: #996f4d; }
+        .status-pill.offline { color: #8b7497; }
+        .app-form label, .form-label { color: #7c598b; }
+        .info-box { color: #8d709a; }
+        @@media (max-width: 1250px) {
+          .button-primary, .button-secondary { font-size: 9px; }
+        }
+        @@media (max-width: 760px) {
+          body { font-size: 13px; }
+          .eyebrow { font-size: 8px; margin-bottom: 10px; }
+          .panel { border-radius: 9px; }
+          .status-pill { font-size: 8px; }
+          .app-form input:not([type='file']), .app-form select { font-size: 13px; min-height: 44px; }
+          .app-form label { font-size: 12px; }
+          .button-primary.wide, .button-secondary.wide { min-height: 44px; }
+        }
+        @@media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+        }
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+    <div id="root">@RenderBody()</div>
+    <script>
+        window.SFD = @Json.Serialize(new { user = SFDPagesController.CurrentUser(User), today = SFDTrackingBuilder.Today(), colors = SFDTrackingBuilder.MemberColors });
+    </script>
+    <script src="~/js/SFDIcons.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

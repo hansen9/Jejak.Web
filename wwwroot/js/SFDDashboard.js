@@ -1,5 +1,5 @@
-import { ApiError, api, auth, boot, direction, esc, icon, initialsOf, num, safeColor, todayWib } from './common.js';
-import { TeamMap } from './map.js';
+import { ApiError, api, auth, boot, direction, esc, icon, initialsOf, num, safeColor, todayWib } from './SFDCommon.js';
+import { TeamMap } from './SFDMap.js';
 
 const HEADINGS = {
   dashboard: ['Ringkasan hari ini', 'Pantau pergerakan tim. Pastikan setiap wilayah terjangkau.'],
@@ -15,7 +15,7 @@ const POLL_MS = 15000;
 const state = {
   view: 'dashboard', date: boot.today, demo: true,
   globalQuery: '', teamQuery: '', status: 'all', selected: null,
-  showTraces: true, showRemaining: true, dismissDemo: false, sortByDistance: false, metric: 'distance',
+  showTraces: true, showRemaining: true, dismissDemo: false, sortByDistance: false,
   user: boot.user, loading: false, error: '', connected: false, updatedAt: '', members: [], routes: [],
 };
 
@@ -93,7 +93,6 @@ function render() {
   renderBanners();
   renderMetrics(members, routes);
   renderTeamList(mapMembers);
-  renderCharts(members, routes);
   renderMembers(members);
   renderRoutes(members, routes);
   renderReport(members, routes);
@@ -104,8 +103,6 @@ function render() {
   const mapVisible = v === 'dashboard' || v === 'map';
   show($('#map-panel'), mapVisible);
   $('#map-panel').classList.toggle('expanded', v === 'map');
-  show($('#charts-grid'), v === 'dashboard' || v === 'analytics');
-  show($('#members-panel'), v !== 'map' && v !== 'routes');
   show($('#routes-panel'), v === 'routes' || v === 'analytics');
   show($('#reports-panel'), v === 'reports');
   if (mapVisible) { map.update({ members: mapMembers, routes, selected: state.selected, showTraces: state.showTraces, showRemaining: state.showRemaining, demo: state.demo }); map.refreshSize(); }
@@ -175,47 +172,6 @@ function renderTeamList(members) {
   if (selected) {
     $('#selected-detail').innerHTML = `<div class="selected-distance">Jarak hari ini<strong>${num(selected.distance)} km</strong></div><div class="selected-distance">Kecepatan &amp; arah<strong>${selected.speed} km/jam · ${direction(selected.bearing)}</strong></div><div class="selected-coordinates">${selected.trace.length ? `${num(selected.position[0], 5)}, ${num(selected.position[1], 5)}` : 'Belum ada posisi GPS'}</div>`;
   }
-}
-
-function renderCharts(members, routes) {
-  // distance per member
-  const ranked = [...members].sort((a, b) => b.distance - a.distance).slice(0, 8);
-  const max = Math.max(10, Math.ceil(Math.max(0, ...ranked.map(m => m.distance)) / 10) * 10);
-  $('#distance-chart').innerHTML = ranked.length
-    ? ranked.map(m => `<div class="bar-row"><span class="bar-name" title="${esc(m.name)}">${esc(m.name.split(' ')[0])}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, m.distance / max * 100)}%;background:${safeColor(m.color)}"></div></div><strong>${num(m.distance)}<span> km</span></strong></div>`).join('')
-      + `<div class="bar-axis">${[0, 1, 2, 3].map(i => `<span>${num(max / 3 * i, 0)}</span>`).join('')}</div>`
-    : `<div class="chart-empty">${icon('route', 25)}Belum ada jarak tempuh untuk tanggal ini.</div>`;
-
-  // coverage donut
-  const cov = coverage(routes);
-  const circumference = 2 * Math.PI * 62;
-  $('#coverage-chart').innerHTML = `<div class="donut-content"><div class="donut"><svg viewBox="0 0 152 152" role="img" aria-label="${num(cov.percent, 0)} persen rute terjangkau"><circle cx="76" cy="76" r="62" fill="none" stroke="var(--donut-rest)" stroke-width="13"/><circle cx="76" cy="76" r="62" fill="none" stroke="var(--plum)" stroke-width="13" stroke-linecap="round" stroke-dasharray="${Math.max(0, circumference * cov.percent / 100 - 6)} ${circumference}" transform="rotate(-90 76 76)"/></svg><div class="donut-label"><strong>${num(cov.percent, 0)}<span>%</span></strong><small>terjangkau</small></div></div><div class="coverage-key"><div><span><i class="key-dot plum"></i>Sudah dilalui</span><strong>${num(cov.done)} <small>km</small></strong></div><div><span><i class="key-dot blush"></i>Belum dilalui</span><strong>${num(cov.remaining)} <small>km</small></strong></div></div></div><div class="coverage-total">Total panjang rute rencana<strong>${num(cov.total)} km</strong></div>`;
-
-  renderActivity(members);
-}
-
-let activity = { data: [], unit: '' };
-
-function renderActivity(members) {
-  const distanceMode = state.metric === 'distance';
-  const data = Array.from({ length: 12 }, (_, i) => distanceMode
-    ? members.reduce((sum, m) => sum + (m.hours[i] ?? 0), 0)
-    : members.filter(m => (m.hours[i] ?? 0) > 0).length);
-  const max = distanceMode ? Math.max(30, ...data) : Math.max(8, ...data);
-  const unit = distanceMode ? 'km' : 'anggota';
-  activity = { data, unit };
-  const coords = data.map((v, i) => [34 + i * 28.7, 143 - v / max * 110]);
-  const grid = [0, 1, 2, 3].map(i => `<line x1="34" x2="350" y1="${143 - i * 36.6}" y2="${143 - i * 36.6}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="23" y="${147 - i * 36.6}" text-anchor="end">${num(max / 3 * i, 0)}</text>`).join('');
-  const points = coords.map(([x, y], i) => `<circle class="act-dot" data-i="${i}" cx="${x}" cy="${y}" r="2" fill="var(--plum)" stroke="white" stroke-width="1.5"/><rect class="act-hit" data-i="${i}" x="${x - 14}" y="25" width="28" height="122" fill="transparent" tabindex="0" aria-label="${i + 6}.00: ${num(data[i])} ${unit}"/>${i % 2 === 0 ? `<text x="${x}" y="164" text-anchor="middle">${String(i + 6).padStart(2, '0')}.00</text>` : ''}`).join('');
-  $('#activity-chart').innerHTML = `<div class="plot-key"><i class="key-dot plum"></i>${distanceMode ? 'Jarak tempuh (km)' : 'Anggota dengan perjalanan'}</div><svg viewBox="0 0 368 173" role="img" aria-label="Grafik aktivitas tim pukul 06 sampai 17 WIB"><defs><linearGradient id="actGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--plum)" stop-opacity="0.19"/><stop offset="100%" stop-color="var(--plum)" stop-opacity="0.01"/></linearGradient></defs>${grid}<path d="M 34 143 L ${coords.map(([x, y]) => `${x} ${y}`).join(' L ')} L 350 143 Z" fill="url(#actGradient)"/><polyline points="${coords.map(([x, y]) => `${x},${y}`).join(' ')}" fill="none" stroke="var(--plum)" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>${points}</svg><div class="chart-tooltip" id="activity-tip" hidden></div>`;
-}
-
-function hoverActivity(index) {
-  $$('#activity-chart .act-dot').forEach(dot => dot.setAttribute('r', Number(dot.dataset.i) === index ? 4 : 2));
-  const tip = $('#activity-tip');
-  if (!tip) return;
-  show(tip, index !== null);
-  if (index !== null) tip.innerHTML = `${String(index + 6).padStart(2, '0')}.00 WIB · <strong>${num(activity.data[index])} ${activity.unit}</strong>`;
 }
 
 function renderMembers(members) {
@@ -468,7 +424,6 @@ $('#team-search').addEventListener('input', event => { state.teamQuery = event.t
 $('#status-filter').addEventListener('change', event => { state.status = event.target.value; render(); });
 $('#toggle-traces').addEventListener('change', event => { state.showTraces = event.target.checked; render(); });
 $('#toggle-remaining').addEventListener('change', event => { state.showRemaining = event.target.checked; render(); });
-$('#activity-metric').addEventListener('change', event => { state.metric = event.target.value; render(); });
 $('#sort-distance').addEventListener('click', () => { state.sortByDistance = !state.sortByDistance; render(); });
 $('#btn-expand').addEventListener('click', () => setView(state.view === 'map' ? 'dashboard' : 'map'));
 $('#btn-export').addEventListener('click', exportCsv);
@@ -477,14 +432,20 @@ $('#btn-refresh').addEventListener('click', () => { if (state.demo) toast(`Data 
 $('#dismiss-demo').addEventListener('click', () => { state.dismissDemo = true; render(); });
 $('#toast-close').addEventListener('click', () => show($('#toast'), false));
 $('#nav-open').addEventListener('click', openNav);
-$('#nav-close').addEventListener('click', closeNav);
+const navToggle = $('#nav-close');
+function setCollapsed(collapsed) {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  const label = collapsed ? 'Perluas navigasi' : 'Ciutkan navigasi';
+  navToggle.setAttribute('aria-label', label); navToggle.title = label;
+}
+try { setCollapsed(localStorage.getItem('sfd.sidebar') === 'collapsed'); } catch { /* storage unavailable: stay expanded */ }
+navToggle.addEventListener('click', () => {
+  if (matchMedia('(max-width: 760px)').matches) { closeNav(); return; }
+  const collapsed = !document.body.classList.contains('sidebar-collapsed');
+  setCollapsed(collapsed);
+  try { localStorage.setItem('sfd.sidebar', collapsed ? 'collapsed' : 'expanded'); } catch { /* ignore */ }
+});
 $('#date-input').addEventListener('change', event => { if (!event.target.value) return; state.date = event.target.value; state.selected = null; void load(); });
-
-const activityRoot = $('#activity-chart');
-activityRoot.addEventListener('mouseover', event => { const hit = event.target.closest('.act-hit'); if (hit) hoverActivity(Number(hit.dataset.i)); });
-activityRoot.addEventListener('mouseout', event => { if (event.target.closest('.act-hit')) hoverActivity(null); });
-activityRoot.addEventListener('focusin', event => { const hit = event.target.closest('.act-hit'); if (hit) hoverActivity(Number(hit.dataset.i)); });
-activityRoot.addEventListener('focusout', () => hoverActivity(null));
 
 document.addEventListener('keydown', event => {
   if (event.key === '/' && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement) && !(event.target instanceof HTMLSelectElement)) {

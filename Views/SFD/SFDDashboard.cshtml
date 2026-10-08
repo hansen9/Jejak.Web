@@ -1,0 +1,628 @@
+@{
+    Layout = "_SFDLayout";
+}
+<style>
+    .dashboard-app { min-height: 100dvh; }
+    .sidebar-bottom { margin-top: auto; padding-top: 50px; }
+    .dashboard-main { max-width: 1700px; margin: auto; padding: 29px 35px 0; }
+    .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 25px; }
+    .page-heading h1 { font-size: 29px; line-height: 1.25; font-weight: 750; letter-spacing: -1.05px; color: #382c41; }
+    .page-heading p { font-size: 11.5px; line-height: 1.8; color: var(--subtle); margin-top: 7px; }
+    .demo-tag { display: inline-block; background: var(--copper-light); border-radius: 3px; color: #a17d62; font-size: 9px; padding: 0 5px; line-height: 18px; margin-left: 5px; vertical-align: 1px; }
+    .heading-actions { display: flex; align-items: center; gap: 10px; padding-top: 17px; flex-shrink: 0; }
+    .refresh-button { margin-right: 1px; }
+    .date-filter { display: flex; align-items: center; gap: 9px; border: 1px solid #e5e0ea; background: var(--paper); border-radius: 7px; min-height: 37px; padding: 8px 11px; color: #756880; font-size: 10px; }
+    .date-filter input { border: none; outline: none; background: transparent; color: #615268; width: 116px; font-size: 10px; font-weight: 600; }
+    .date-filter input:focus { outline: none; }
+    .date-filter input::-webkit-calendar-picker-indicator { opacity: .55; width: 13px; cursor: pointer; }
+    .date-filter>svg:last-child { display: none; }
+    .metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin-bottom: 23px; }
+    .metric { padding: 17px 20px 16px; background: var(--paper); border-radius: 10px; }
+    .metric-remaining { background: #f3edef; }
+    .metric-label { display: flex; align-items: center; justify-content: space-between; gap: 7px; color: #7b7184; font-size: 11px; font-weight: 550; }
+    .metric-icon { display: flex; align-items: center; justify-content: center; width: 31px; height: 31px; border-radius: 7px; background: #f6f2f8; color: #977d9f; }
+    .metric-remaining .metric-icon { background: #ede2e6; color: #ad8890; }
+    .metric-value { font-size: 34px; font-weight: 750; letter-spacing: -1.5px; line-height: 1.25; margin-top: 5px; color: #46344f; }
+    .metric-value>span { font-size: 15px; color: #9c8ba4; font-weight: 450; letter-spacing: -.3px; margin-left: 6px; }
+    .metric-active .metric-value>span { font-size: 19px; }
+    .metric-foot { display: flex; align-items: center; flex-wrap: wrap; column-gap: 5px; row-gap: 3px; margin-top: 9px; color: #7d7483; font-size: 8.5px; min-height: 14px; }
+    .metric-foot>svg { color: var(--green); }
+    .metric-foot i { width: 2px; height: 2px; background: #b3a7b8; border-radius: 50%; margin: 0 1px; }
+    .metric-detail { color: #a094a8; font-size: 8px; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 19px 21px 0; }
+    .panel-heading h2 { font-size: 13px; font-weight: 750; letter-spacing: -.15px; color: #4b3c56; }
+    .panel-heading p { font-size: 9px; color: #a195a9; margin-top: 5px; line-height: 1.6; }
+    .map-panel { margin-bottom: 22px; }
+    .map-panel-heading { padding: 15px 21px 12px; }
+    .map-title { display: flex; align-items: center; gap: 10px; }
+    .live-badge { display: flex; align-items: center; gap: 4px; background: #f0f5f1; color: #7e9986; font-size: 7px; font-weight: 700; border-radius: 4px; padding: 3px 5px; letter-spacing: .5px; }
+    .map-panel-actions { display: flex; align-items: center; gap: 11px; }
+    .last-update { font-size: 9px; color: #aa9eb1; }
+    .map-toolbar { border-top: 1px solid #f1edf4; padding: 10px 21px; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .map-toolbar p { display: flex; align-items: center; gap: 6px; color: #7d7386; font-size: 9px; }
+    .map-toolbar p>span:last-child { color: #aba0b3; }
+    .toolbar-separator { margin: 0 3px; }
+    .map-layer-options { display: flex; align-items: center; gap: 16px; }
+    .map-layer-options label { display: flex; align-items: center; gap: 5px; font-size: 9px; color: #8b7f95; cursor: pointer; }
+    .map-layer-options input { accent-color: var(--plum); width: 11px; height: 11px; margin: 0; border-radius: 3px; cursor: pointer; }
+    .map-and-team { display: grid; grid-template-columns: minmax(0,1fr) 286px; }
+    .map-canvas { position: relative; min-width: 0; height: 423px; background: #e9eae5; overflow: hidden; }
+    .leaflet-container-slot { height: 100%; width: 100%; background: #ebece7; z-index: 0; }
+    .leaflet-container { font-family: var(--font-body); }
+    .leaflet-control-attribution { font-size: 7px !important; color: #999 !important; background: rgba(255,255,255,.85) !important; padding: 1px 4px !important; }
+    .leaflet-control-attribution a { color: #858087 !important; }
+    .map-location { position: absolute; top: 17px; left: 17px; background: rgba(255,255,255,.94); padding: 9px 11px; border: 1px solid white; border-radius: 6px; display: flex; align-items: center; gap: 6px; pointer-events: none; font-size: 9px; box-shadow: 0 2px 8px #716c7910; z-index: 5; }
+    .map-location strong { font-weight: 650; }
+    .map-location>span:last-child { font-size: 8px; color: #a99cab; border-left: 1px solid var(--line); padding-left: 7px; margin-left: 2px; }
+    .map-controls { position: absolute; top: 17px; right: 16px; display: flex; flex-direction: column; padding: 4px; background: rgba(255,255,255,.95); border-radius: 6px; box-shadow: 0 2px 8px #716c7915; z-index: 5; }
+    .map-controls button { width: 29px; height: 31px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: #7d7386; border-radius: 4px; }
+    .map-controls button:hover { background: var(--plum-light); color: var(--plum); }
+    .map-controls>span { height: 1px; width: 21px; margin: 3px auto; background: var(--line); }
+    .map-style { position: absolute; bottom: 48px; left: 17px; display: flex; align-items: center; gap: 7px; padding: 9px 11px; font-size: 9px; color: #86798f; border: 2px solid white; background: #fefdfef2; border-radius: 5px; z-index: 5; box-shadow: 0 2px 8px #716c7910; }
+    .map-style:hover { background: var(--plum-light); }
+    .map-legend { position: absolute; bottom: 17px; left: 17px; border-radius: 4px; background: #ffffffed; padding: 7px 10px; display: flex; align-items: center; gap: 16px; z-index: 5; font-size: 8px; color: #8c8095; pointer-events: none; }
+    .map-legend>span { display: flex; align-items: center; gap: 6px; }
+    .legend-line { width: 15px; border-top: 2px solid var(--plum); }
+    .legend-dashed { width: 15px; border-top: 2px dashed var(--copper); }
+    .legend-dot { width: 6px; height: 6px; border-radius: 50%; border: 1px solid white; background: var(--plum); outline: 1px solid #cbb5d2; }
+    .map-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #ebece7; color: #a29aaa; font-size: 12px; }
+    .team-map-marker { position: relative; transition: opacity .18s; }
+    .marker-face { display: flex; width: 32px; height: 32px; border: 3px solid white; color: white; font-size: 9px; font-weight: 750; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 2px 6px #50445345; margin: 3px; }
+    .marker-arrow { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 9px solid var(--plum); position: absolute; top: -6px; left: 15px; transform-origin: 4px 25px; }
+    .marker-status { width: 7px; height: 7px; border: 1.5px solid white; border-radius: 50%; background: var(--green); position: absolute; bottom: 2px; right: 3px; }
+    .marker-status.berhenti { background: var(--copper); }
+    .marker-status.offline { background: #a69ca9; }
+    .team-map-marker.selected .marker-face { outline: 5px solid #bda2c660; }
+    .team-tooltip { font: 10px var(--font-body); border: 0; border-radius: 5px; padding: 7px 9px; box-shadow: 0 2px 9px #48364f20; color: var(--plum-dark); }
+    .map-fullscreen { position: fixed; z-index: 60; inset: 15px; width: calc(100vw - 30px); height: calc(100dvh - 30px) !important; border-radius: 12px; box-shadow: 0 0 0 20px #302a3899; }
+    .map-error { position: absolute; z-index: 5; bottom: 56px; right: 15px; font-size: 8px; background: var(--copper-light); padding: 8px; border-radius: 4px; color: var(--copper); max-width: 220px; }
+    .map-empty { position: absolute; top: 45%; left: 50%; transform: translateX(-50%); background: #ffffffec; color: var(--subtle); padding: 12px; border-radius: 6px; z-index: 5; font-size: 11px; white-space: nowrap; }
+    .team-live { display: flex; flex-direction: column; height: 423px; border-left: 1px solid var(--line); min-width: 0; }
+    .team-live-heading { display: flex; align-items: center; justify-content: space-between; padding: 15px 16px 10px; }
+    .team-live-heading h3 { font-size: 11px; font-weight: 700; color: #67566f; display: flex; align-items: center; gap: 6px; }
+    .team-live-heading h3>span { font-size: 8px; padding: 1px 5px; color: #a694ad; background: #f5f1f8; border-radius: 3px; }
+    .status-filter { position: relative; cursor: pointer; color: #a295ac; }
+    .status-filter select { position: absolute; inset: -8px; width: 32px; opacity: 0; cursor: pointer; }
+    .team-search { display: flex; align-items: center; margin: 0 16px 8px; padding: 8px 9px; gap: 6px; background: #faf8fc; color: #b0a4b9; border: 1px solid #f0eaf5; border-radius: 5px; }
+    .team-search input { background: transparent; outline: none; border: none; width: 100%; font-size: 9px; }
+    .team-search input:focus { outline: none; }
+    .team-live-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ded4e5 transparent; }
+    .live-member { display: flex; width: 100%; align-items: center; gap: 8px; padding: 10px 16px; border: none; background: transparent; text-align: left; }
+    .live-member:hover { background: #f9f6fb; }
+    .live-member.selected { background: var(--plum-light); }
+    .member-avatar { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 31px; height: 31px; flex-shrink: 0; border-radius: 50%; background: color-mix(in srgb, var(--member-color) 15%, white); color: var(--member-color); font-size: 9px; font-weight: 750; border: 1px solid color-mix(in srgb, var(--member-color) 17%, white); }
+    .avatar-status { position: absolute; width: 6px; height: 6px; bottom: -1px; right: 1px; background: var(--green); border: 1.4px solid white; border-radius: 50%; }
+    .avatar-status.berhenti { background: var(--copper); }
+    .avatar-status.offline { background: #ac9bb4; }
+    .live-member-info { flex: 1; min-width: 0; }
+    .live-member-info strong { display: block; font-size: 9px; font-weight: 650; color: #5c4b66; white-space: nowrap; }
+    .live-member-info small { display: block; font-size: 8px; color: #ad9fb6; margin-top: 4px; }
+    .live-member-speed { display: flex; flex-direction: column; text-align: right; flex-shrink: 0; align-items: flex-end; gap: 4px; }
+    .live-member-speed>strong { font-size: 11px; font-weight: 750; color: #62506c; display: flex; align-items: baseline; gap: 3px; }
+    .live-member-speed>strong>small { font-size: 7px; color: #b0a1b8; font-weight: 450; }
+    .member-state { display: flex; align-items: center; gap: 3px; font-size: 7px; color: #9c8ba8; }
+    .member-state.berhenti { color: var(--copper); }
+    .member-state.offline { color: #b0a5b7; }
+    .team-all { display: flex; align-items: center; justify-content: center; gap: 7px; border: none; border-top: 1px solid var(--line); background: white; color: var(--plum); padding: 13px 5px; font-size: 9px; font-weight: 600; }
+    .team-all:hover { background: var(--plum-light); }
+    .selected-distance { font-size: 9px; padding: 10px 14px; color: var(--subtle); background: #faf7fc; display: flex; justify-content: space-between; }
+    .selected-distance strong { color: var(--plum); }
+    .selected-member-detail { background: #faf7fc; border-top: 1px solid var(--line); }
+    .selected-member-detail .selected-distance { padding-top: 7px; padding-bottom: 4px; font-size: 8px; }
+    .selected-coordinates { padding: 4px 14px 8px; font-size: 7px; color: #9d87a7; }
+    .list-empty { font-size: 10px; text-align: center; color: var(--subtle); padding: 45px 20px; line-height: 1.8; }
+    .expanded .map-canvas, .expanded .team-live { height: 590px; }
+    .expanded .live-member { padding-top: 17px; padding-bottom: 17px; }
+    .charts-grid { display: grid; grid-template-columns: 1.07fr .91fr 1.05fr; gap: 18px; margin-bottom: 22px; }
+    .charts-grid>.panel { min-width: 0; min-height: 255px; }
+    .charts-grid .panel-heading { padding: 17px 18px 0; }
+    .charts-grid .panel-heading h2 { font-size: 11.5px; }
+    .charts-grid .panel-heading p { font-size: 8px; margin-top: 4px; }
+    .bar-chart { padding: 17px 18px 15px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; height: 24px; }
+    .bar-name { font-size: 8px; color: #9a8ca4; width: 48px; flex-shrink: 0; }
+    .bar-name small { font-size: 8px; }
+    .bar-track { flex: 1; height: 8px; border-radius: 2px; background: repeating-linear-gradient(to right, transparent 0%, transparent calc(33.33% - 1px), #f2edf6 calc(33.33% - 1px), #f2edf6 33.33%); }
+    .bar-fill { height: 8px; border-radius: 0 2px 2px 0; opacity: .83; }
+    .bar-row>strong { font-size: 8px; font-weight: 650; color: #7a668a; flex-shrink: 0; width: 37px; text-align: right; }
+    .bar-row>strong>span { font-size: 7px; color: #af9cba; font-weight: 450; }
+    .bar-axis { display: flex; align-items: center; justify-content: space-between; padding: 8px 46px 0 58px; color: #b2a5bc; font-size: 7px; }
+    .donut-content { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px 17px 0; }
+    .donut { position: relative; width: 144px; flex-shrink: 0; }
+    .donut svg { width: 100%; display: block; }
+    .donut-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .donut-label strong { font-size: 28px; font-weight: 750; letter-spacing: -1px; color: #634671; }
+    .donut-label strong>span { font-size: 15px; margin-left: 2px; }
+    .donut-label small { font-size: 7.5px; color: #ac96b8; margin-top: 1px; }
+    .coverage-key { display: flex; flex-direction: column; gap: 18px; }
+    .coverage-key>div>span { display: flex; align-items: center; gap: 5px; color: #a08aac; font-size: 7.5px; white-space: nowrap; }
+    .key-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .key-dot.plum { background: var(--plum); }
+    .key-dot.blush { background: var(--blush); }
+    .coverage-key strong { display: block; font-size: 13px; margin: 5px 0 0 10px; font-weight: 700; color: #70577e; }
+    .coverage-key strong>small { color: #b49fc0; font-size: 8px; font-weight: 450; }
+    .coverage-total { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f2edf6; margin: 4px 18px 0; padding: 10px 0; font-size: 7.5px; color: #b2a0be; }
+    .coverage-total strong { font-size: 8px; color: #957ca4; font-weight: 600; }
+    .chart-select { display: flex; align-items: center; gap: 4px; border: 1px solid #ece3f2; padding: 5px 7px; border-radius: 4px; color: #a088b0; }
+    .chart-select select { border: none; background: transparent; outline: none; appearance: none; font-size: 8px; padding: 0; width: 38px; }
+    .chart-select select:focus { outline: none; }
+    .activity-plot { position: relative; padding: 13px 16px 4px; }
+    .plot-key { display: flex; align-items: center; gap: 5px; font-size: 7px; color: #aa95b5; margin: 0 0 5px 15px; }
+    .activity-plot>svg { width: 100%; display: block; }
+    .activity-plot text { font: 8px var(--font-body); fill: #b1a0ba; }
+    .chart-tooltip { position: absolute; top: 40px; left: 65px; padding: 7px 9px; border: 1px solid var(--line); background: white; border-radius: 5px; font-size: 8px; color: var(--subtle); pointer-events: none; }
+    .chart-tooltip strong { color: var(--plum); }
+    .chart-empty { height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-size: 10px; color: #ab9ab6; }
+    .member-table-panel { margin-bottom: 22px; }
+    .member-table-panel .panel-heading { padding-bottom: 16px; }
+    .table-scroll { overflow-x: auto; scrollbar-width: thin; }
+    .member-table { border-collapse: collapse; width: 100%; text-align: left; white-space: nowrap; }
+    .member-table thead { background: #faf8fc; border-bottom: 1px solid #f0eaf5; }
+    .member-table th { font-size: 8px; font-weight: 550; color: #a38faf; padding: 11px 17px; }
+    .member-table th:first-child { padding-left: 22px; }
+    .member-table th button { border: none; background: transparent; color: inherit; display: inline-flex; align-items: center; gap: 7px; padding: 0; font-size: 8px; }
+    .member-table td { font-size: 9px; color: #9981a9; padding: 11px 17px; border-bottom: 1px solid #f4eff7; }
+    .member-table tr:last-child td { border-bottom: none; }
+    .member-table tr:hover td { background: #fcfafd; }
+    .member-table td:first-child { padding-left: 22px; }
+    .member-table td:last-child { padding-right: 16px; padding-left: 4px; }
+    .member-table td>strong { font-weight: 650; color: #705580; }
+    .table-person { display: flex; align-items: center; gap: 9px; }
+    .member-avatar.small { width: 29px; height: 29px; font-size: 8px; }
+    .table-person strong { display: block; color: #6d537c; font-size: 9px; font-weight: 650; }
+    .table-person small { display: block; font-size: 7px; color: #b7a3c2; margin-top: 4px; }
+    .table-unit { font-size: 7px; color: #baa4c7; }
+    .table-direction { display: flex; align-items: center; gap: 5px; font-size: 8px; color: #a289b1; }
+    .battery { display: flex; align-items: center; gap: 5px; font-size: 8px; color: #85968b; }
+    .battery.low { color: #b58b78; }
+    .table-footer-button { width: 100%; background: white; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 12px; border: none; border-top: 1px solid #f2edf6; font-size: 8px; color: #9980a7; }
+    .table-footer-button:hover { background: var(--plum-light); }
+    .table-empty { padding: 50px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; color: #a28aaf; }
+    .table-empty h3 { font-size: 13px; color: #775485; }
+    .table-empty p { font-size: 11px; margin-bottom: 9px; }
+    .routes-panel { margin-bottom: 22px; }
+    .routes-panel .panel-heading { padding-bottom: 19px; }
+    .route-name { display: flex; align-items: center; gap: 12px; }
+    .route-name>svg { color: #b096bd; }
+    .route-name strong { display: block; color: #755382; font-size: 10px; }
+    .route-name small { display: block; font-size: 8px; margin-top: 5px; color: #b59ec0; }
+    .route-progress { display: flex; align-items: center; gap: 12px; width: 150px; }
+    .route-progress>div { height: 5px; background: var(--donut-rest); border-radius: 3px; flex: 1; }
+    .route-progress>div>span { height: 100%; display: block; background: var(--plum); border-radius: 3px; }
+    .route-progress>strong { font-size: 9px; width: 30px; font-weight: 600; }
+    .text-copper { color: var(--copper) !important; }
+    .route-note { padding: 15px 21px; border-top: 1px solid #f4eef7; color: #a18cad; font-size: 9px; line-height: 1.7; }
+    .report-panel { display: flex; gap: 35px; padding: 43px; margin-bottom: 22px; }
+    .report-icon { color: var(--plum); background: var(--plum-light); padding: 22px; height: fit-content; border-radius: 13px; }
+    .report-content { max-width: 630px; }
+    .report-content h2 { font-size: 24px; font-weight: 750; letter-spacing: -.7px; margin-bottom: 13px; color: #664570; }
+    .report-content>p { font-size: 11px; line-height: 1.9; color: #a48db0; }
+    .report-facts { display: flex; gap: 25px; margin: 25px 0; color: #a48db0; font-size: 10px; }
+    .report-facts strong { font-size: 16px; color: #705079; margin-right: 3px; }
+    .report-buttons { display: flex; align-items: center; gap: 10px; }
+    .report-disclaimer { display: flex; align-items: center; gap: 6px; font-size: 8px !important; margin-top: 20px; }
+    .demo-banner { display: flex; align-items: center; gap: 12px; padding: 15px 19px; background: #ede8f1; border-radius: 8px; margin: 0 0 23px; }
+    .demo-banner-icon { display: flex; align-items: center; justify-content: center; color: #9d80ad; border-radius: 7px; width: 34px; height: 34px; background: #f6f2f8; }
+    .demo-banner>div { flex: 1; }
+    .demo-banner strong { font-size: 10px; color: #80648f; font-weight: 650; }
+    .demo-banner p { font-size: 8.5px; color: #a28aad; margin-top: 4px; }
+    .demo-banner>button:not(.icon-button) { border: none; border-radius: 5px; display: flex; align-items: center; gap: 5px; padding: 8px 11px; color: #8a6a9b; background: #fcfafd; font-size: 8px; font-weight: 650; }
+    .demo-banner>button:not(.icon-button):hover { background: white; }
+    .demo-banner>.icon-button { margin-left: -3px; color: #a994b4; }
+    .dashboard-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 22px; color: #b4a6bf; font-size: 8px; }
+    .dashboard-footer>div { display: flex; align-items: center; gap: 5px; }
+    .dashboard-footer>div>i { width: 2px; height: 2px; background: #c6b7d0; border-radius: 50%; margin: 0 5px; }
+    .app-toast { display: flex; align-items: center; gap: 9px; position: fixed; bottom: 25px; left: calc(50% + 100px); transform: translateX(-50%); padding: 10px 14px; background: var(--plum-dark); color: white; border-radius: 8px; z-index: 80; font-size: 11px; box-shadow: 0 5px 20px #533f6340; }
+    .app-toast .icon-button { color: #cebdd7; }
+    .error-banner { display: flex; align-items: center; justify-content: space-between; gap: 15px; background: var(--error-bg); color: var(--error); padding: 12px 15px; border-radius: 7px; font-size: 11px; margin-bottom: 20px; }
+    .error-banner button { font-size: 10px; background: transparent; color: var(--error); border: none; text-decoration: underline; }
+    .metric-skeleton { width: 90px; height: 37px; border-radius: 5px; background: var(--plum-light); margin-top: 9px; }
+    .page-heading p { font-size: 12px; }
+    .metric-label { font-size: 11.5px; }
+    .metric-foot { font-size: 9px; color: #766a7d; }
+    .metric-detail { color: #8e7d98; font-size: 8.5px; }
+    .panel-heading h2, .charts-grid .panel-heading h2 { font-size: 13px; }
+    .panel-heading p, .charts-grid .panel-heading p { font-size: 10px; color: #87768f; }
+    .last-update { font-size: 10px; color: #8c7b96; }
+    .map-toolbar p, .map-layer-options label { font-size: 10px; color: #84718e; }
+    .map-toolbar p>span:last-child { color: #8f7e98; }
+    .live-member-info strong { font-size: 10px; }
+    .live-member-info small { font-size: 8.5px; color: #907b9c; }
+    .live-member-speed>strong { font-size: 12px; }
+    .live-member-speed>strong>small { font-size: 8px; color: #94819e; }
+    .member-state { font-size: 8px; color: #866e94; }
+    .member-state.offline { color: #8f7c9b; }
+    .team-search input { font-size: 10px; }
+    .team-all { font-size: 10px; }
+    .map-legend { font-size: 9px; color: #796982; }
+    .map-style { font-size: 10px; }
+    .bar-name, .bar-name small { font-size: 9px; color: #85708f; }
+    .bar-row>strong { font-size: 9px; }
+    .bar-row>strong>span { font-size: 8px; color: #957da1; }
+    .bar-axis { font-size: 8px; color: #947d9f; }
+    .coverage-key>div>span { color: #897096; font-size: 8.5px; }
+    .coverage-total { color: #8f769c; font-size: 8.5px; }
+    .coverage-total strong { color: #7c5f8b; font-size: 9px; }
+    .donut-label small { color: #94769f; font-size: 9px; }
+    .plot-key { color: #907399; font-size: 8px; }
+    .activity-plot text { fill: #947c9f; font-size: 9px; }
+    .member-table th { font-size: 9px; color: #8c709b; }
+    .member-table td { font-size: 10px; color: #876b96; }
+    .table-person strong { font-size: 10px; }
+    .table-person small { font-size: 8px; color: #9983a4; }
+    .table-unit { font-size: 8px; color: #9b80a8; }
+    .table-direction { font-size: 9px; color: #9273a0; }
+    .table-footer-button { font-size: 9px; color: #89679a; }
+    .demo-banner strong { color: #745482; font-size: 11px; }
+    .demo-banner p { color: #92729f; font-size: 9px; }
+    .dashboard-footer { color: #9985a4; font-size: 8px; }
+    .report-content>p { color: #92739f; }
+    .route-note { color: #9477a1; }
+    @@media (min-width: 1600px) {
+      .dashboard-main { padding: 35px 45px 0; }
+      .map-canvas, .team-live { height: 465px; }
+      .map-and-team { grid-template-columns: minmax(0,1fr) 310px; }
+      .live-member { padding-top: 12px; padding-bottom: 12px; }
+      .charts-grid>.panel { min-height: 280px; }
+      .bar-row { height: 28px; }
+      .donut { width: 160px; }
+      .metric { padding: 21px 24px; }
+      .metric-value { font-size: 39px; }
+    }
+    @@media (max-width: 1250px) {
+      .dashboard-main { padding: 25px 24px 0; }
+      .page-heading h1 { font-size: 26px; }
+      .heading-actions { gap: 7px; }
+      .page-heading p { font-size: 10px; }
+      .metrics { gap: 12px; }
+      .metric { padding: 14px 15px; }
+      .metric-value { font-size: 30px; }
+      .metric-label { font-size: 10px; }
+      .metric-foot { font-size: 8px; }
+      .metric-detail { display: none; }
+      .map-and-team { grid-template-columns: minmax(0,1fr) 258px; }
+      .live-member { padding-left: 13px; padding-right: 13px; gap: 7px; }
+      .live-member-info strong { font-size: 8.5px; }
+      .live-member-info small { font-size: 7px; }
+      .live-member-speed>strong { font-size: 10px; }
+      .charts-grid { gap: 13px; grid-template-columns: 1fr 1fr 1fr; }
+      .donut-content { gap: 8px; padding-left: 12px; padding-right: 12px; }
+      .donut { width: 116px; }
+      .donut-label strong { font-size: 25px; }
+      .coverage-key>div>span { font-size: 6.5px; }
+      .coverage-key strong { font-size: 12px; }
+      .coverage-chart .coverage-total { margin-top: 20px; }
+      .charts-grid .panel-heading { padding-left: 15px; padding-right: 12px; }
+      .charts-grid .panel-heading h2 { font-size: 10px; }
+      .charts-grid .panel-heading p { font-size: 7px; }
+      .bar-chart { padding-left: 14px; padding-right: 14px; }
+      .bar-row { gap: 7px; }
+      .bar-name { width: 39px; }
+      .bar-row>strong { width: 30px; font-size: 7px; }
+      .bar-axis { padding-left: 46px; padding-right: 33px; }
+      .activity-plot { padding: 15px 9px 4px; }
+      .chart-select { padding: 4px; }
+    }
+    @@media (max-width: 1020px) {
+      .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 18px; gap: 7px; }
+      .heading-actions { padding-top: 0; align-self: flex-end; margin-top: -3px; }
+      .metrics { gap: 9px; }
+      .metric { padding: 13px 12px; }
+      .metric-label { font-size: 8px; }
+      .metric-icon { width: 26px; height: 26px; }
+      .metric-icon>svg { width: 16px; }
+      .metric-value { font-size: 28px; }
+      .metric-foot { font-size: 7px; }
+      .map-and-team { grid-template-columns: minmax(0,1fr) 233px; }
+      .map-toolbar { gap: 6px; padding-left: 15px; padding-right: 15px; }
+      .map-layer-options { gap: 10px; }
+      .map-layer-options label { font-size: 8px; }
+      .map-toolbar p { font-size: 8px; }
+      .map-location { font-size: 8px; }
+      .map-location>span:last-child { display: none; }
+      .map-legend { gap: 9px; font-size: 7px; }
+      .live-member-info strong { font-size: 8px; }
+      .live-member { gap: 6px; padding-left: 11px; padding-right: 11px; }
+      .member-avatar { width: 28px; height: 28px; font-size: 8px; }
+      .live-member-speed>strong { font-size: 9px; }
+      .live-member-speed>strong>small { font-size: 6px; }
+      .member-state { font-size: 6px; }
+      .team-live-heading h3 { font-size: 10px; }
+      .team-live-heading { padding-left: 12px; padding-right: 12px; }
+      .team-search { margin-left: 12px; margin-right: 12px; }
+      .charts-grid { grid-template-columns: 1fr 1fr; }
+      .activity-chart { grid-column: 1 / -1; }
+      .activity-plot { padding-top: 18px; padding-left: 20px; padding-right: 20px; }
+      .activity-plot>svg { max-height: 160px; }
+      .plot-key { margin-left: 45px; }
+      .chart-tooltip { left: 45%; }
+      .charts-grid .panel-heading h2 { font-size: 12px; }
+      .charts-grid .panel-heading p { font-size: 8px; }
+      .donut { width: 150px; }
+      .donut-content { gap: 22px; }
+      .coverage-chart .coverage-total { margin-top: 0; }
+      .coverage-key>div>span { font-size: 8px; }
+      .dashboard-footer { flex-wrap: wrap; }
+      .report-panel { padding: 28px; gap: 22px; }
+      .report-content h2 { font-size: 21px; }
+    }
+    @@media (max-width: 760px) {
+      .dashboard-main { padding: 23px 20px 0; }
+      .page-heading h1 { font-size: 27px; }
+      .page-heading p { font-size: 10px; }
+      .page-heading { gap: 15px; margin-bottom: 20px; }
+      .heading-actions { align-self: flex-start; width: 100%; gap: 8px; margin-top: 0; }
+      .heading-actions .refresh-button { margin-left: auto; order: 3; }
+      .date-filter { min-height: 40px; padding: 8px 10px; }
+      .date-filter input { width: 113px; }
+      .heading-actions .button-primary { min-height: 40px; font-size: 9px; }
+      .refresh-button { min-height: 40px; min-width: 34px; }
+      .metrics { grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 20px; }
+      .metric { padding: 16px; }
+      .metric-label { font-size: 10px; }
+      .metric-value { font-size: 31px; margin-top: 8px; }
+      .metric-foot { font-size: 8px; margin-top: 10px; }
+      .metric-value>span { font-size: 13px; }
+      .metric-active .metric-value>span { font-size: 18px; }
+      .metric-icon { width: 28px; height: 28px; }
+      .map-panel-heading { padding: 14px 15px 11px; }
+      .map-title { gap: 7px; }
+      .map-title h2 { font-size: 12px; }
+      .live-badge { font-size: 6px; }
+      .last-update { font-size: 7px; }
+      .map-panel-actions { gap: 5px; }
+      .map-toolbar { flex-wrap: wrap; padding: 10px 15px; gap: 10px; }
+      .map-toolbar p { font-size: 8px; }
+      .map-layer-options label { font-size: 8px; }
+      .map-layer-options input { width: 13px; height: 13px; }
+      .map-and-team { grid-template-columns: 1fr; }
+      .map-canvas { height: 350px; }
+      .map-location { font-size: 8px; top: 13px; left: 13px; }
+      .map-controls { top: 13px; right: 13px; }
+      .map-controls button { width: 31px; height: 36px; }
+      .map-legend { bottom: 16px; left: 13px; gap: 11px; padding: 8px; font-size: 7px; }
+      .map-style { bottom: 49px; left: 13px; min-height: 35px; }
+      .team-live { height: 286px; border-left: none; border-top: 1px solid var(--line); }
+      .team-live-heading { padding: 15px 15px 9px; }
+      .team-live-heading h3 { font-size: 11px; }
+      .team-search { margin: 0 15px 9px; padding: 9px; }
+      .team-search input { font-size: 10px; }
+      .team-live-list { display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
+      .live-member { padding: 12px 13px; gap: 7px; }
+      .live-member-info strong { font-size: 8px; }
+      .live-member-info small { font-size: 7px; }
+      .live-member-speed { display: none; }
+      .member-avatar { width: 29px; height: 29px; }
+      .team-all { font-size: 9px; min-height: 40px; }
+      .selected-distance { font-size: 9px; padding: 9px 15px; }
+      .expanded .map-canvas { height: 430px; }
+      .expanded .team-live { height: 325px; }
+      .expanded .live-member { padding-top: 13px; padding-bottom: 13px; }
+      .charts-grid { gap: 14px; grid-template-columns: 1fr; margin-bottom: 20px; }
+      .activity-chart { grid-column: auto; }
+      .charts-grid>.panel { min-height: 245px; }
+      .charts-grid .panel-heading { padding: 19px 20px 0; }
+      .charts-grid .panel-heading h2 { font-size: 13px; }
+      .charts-grid .panel-heading p { font-size: 9px; }
+      .bar-chart { padding: 15px 22px; }
+      .bar-row { height: 26px; gap: 10px; }
+      .bar-name { font-size: 9px; width: 54px; }
+      .bar-track, .bar-fill { height: 9px; }
+      .bar-row>strong { font-size: 9px; width: 38px; }
+      .bar-row>strong>span { font-size: 8px; }
+      .bar-axis { padding-left: 64px; padding-right: 48px; font-size: 8px; }
+      .donut-content { gap: 30px; padding-top: 7px; }
+      .donut { width: 154px; }
+      .coverage-key { gap: 23px; }
+      .coverage-key>div>span { font-size: 9px; }
+      .coverage-key strong { font-size: 16px; }
+      .coverage-total { font-size: 9px; margin-left: 20px; margin-right: 20px; }
+      .coverage-total strong { font-size: 10px; }
+      .activity-plot { padding-left: 14px; padding-right: 14px; }
+      .activity-plot>svg { max-height: 175px; }
+      .plot-key { font-size: 9px; margin-left: 20px; }
+      .member-table-panel .panel-heading { padding: 18px 16px 14px; }
+      .member-table-panel .panel-heading h2 { font-size: 12px; }
+      .member-table-panel .panel-heading p { font-size: 8px; max-width: 170px; }
+      .member-table-panel .button-secondary { font-size: 8px; padding: 8px; min-height: 36px; gap: 4px; }
+      .member-table { min-width: 740px; }
+      .member-table th { font-size: 9px; padding: 12px 15px; }
+      .member-table td { font-size: 10px; padding: 12px 15px; }
+      .table-person strong { font-size: 10px; }
+      .table-person small { font-size: 8px; }
+      .table-direction { font-size: 9px; }
+      .table-footer-button { font-size: 9px; min-height: 42px; }
+      .routes-panel .panel-heading { padding: 17px 16px; }
+      .routes-panel .panel-heading h2 { font-size: 12px; }
+      .routes-panel .panel-heading p { font-size: 8px; }
+      .routes-table { min-width: 700px; }
+      .route-note { font-size: 9px; padding: 15px; }
+      .demo-banner { padding: 14px; gap: 10px; flex-wrap: wrap; }
+      .demo-banner>div { min-width: calc(100% - 50px); }
+      .demo-banner p { font-size: 9px; }
+      .demo-banner>button:not(.icon-button) { margin-left: 44px; font-size: 9px; min-height: 35px; }
+      .demo-banner>.icon-button { margin-left: auto; }
+      .demo-banner strong { font-size: 11px; }
+      .dashboard-footer { gap: 10px; font-size: 7px; padding-bottom: 22px; }
+      .dashboard-footer>div { flex-wrap: wrap; }
+      .dashboard-footer>div>i { margin: 0 2px; }
+      .app-toast { left: 50%; width: calc(100% - 35px); bottom: 15px; font-size: 10px; justify-content: center; }
+      .report-panel { flex-direction: column; gap: 20px; padding: 25px; }
+      .report-icon { padding: 18px; width: fit-content; }
+      .report-content h2 { font-size: 23px; }
+      .report-content>p { font-size: 11px; }
+      .report-facts { flex-wrap: wrap; gap: 17px; }
+      .report-buttons { flex-direction: column; align-items: flex-start; }
+      .report-buttons .button-primary, .report-buttons .button-secondary { min-height: 44px; font-size: 11px; }
+      .map-layer-options label { min-height: 30px; }
+      .live-member { min-height: 44px; }
+      .team-live-heading { min-height: 44px; }
+      .status-filter { min-width: 32px; min-height: 30px; display: flex; align-items: center; justify-content: center; }
+      .status-filter select { inset: 0; height: 100%; }
+      .map-style { min-height: 44px; }
+      .map-controls button { width: 35px; height: 44px; }
+    }
+</style>
+<div class="dashboard-app" id="app">
+    <partial name="_SFDSidebar" />
+    <div class="app-body">
+        <partial name="_SFDTopbar" />
+        <main class="dashboard-main">
+            <section class="page-heading">
+                <div>
+                    <div class="eyebrow"><span></span> PANTAU. PAHAMI. ARAHKAN.</div>
+                    <h1 id="page-title">Ringkasan hari ini</h1>
+                    <p><span id="page-sub"></span> <span class="demo-tag" id="demo-tag">Data demo</span></p>
+                </div>
+                <div class="heading-actions">
+                    <button class="icon-button refresh-button" id="btn-refresh" aria-label="Perbarui data">@Html.Icon("refresh-cw", 17)</button>
+                    <label class="date-filter">
+                        @Html.Icon("calendar-days", 17)
+                        <input type="date" id="date-input" aria-label="Pilih tanggal perjalanan" />
+                        @Html.Icon("chevron-down", 13)
+                    </label>
+                    <button class="button-primary" id="btn-export">@Html.Icon("download", 16)Unduh laporan</button>
+                </div>
+            </section>
+
+            <div id="banners"></div>
+            <section class="metrics" id="metrics" aria-label="Ringkasan indikator"></section>
+
+            <section class="map-panel panel" id="map-panel">
+                <div class="panel-heading map-panel-heading">
+                    <div class="map-title"><h2>Pantauan tim</h2><span class="live-badge">@Html.Icon("radio", 12)<span id="live-badge-text">SIMULASI</span></span></div>
+                    <div class="map-panel-actions">
+                        <span class="last-update">Diperbarui <span id="updated-at">—</span></span>
+                        <button class="icon-button" id="btn-expand" aria-label="Buka tampilan peta">@Html.Icon("expand", 16)</button>
+                    </div>
+                </div>
+                <div class="map-toolbar">
+                    <p><span class="status-dot"></span><span id="active-count">0</span> anggota aktif<span class="toolbar-separator">·</span><span>Perjalanan hari ini</span></p>
+                    <div class="map-layer-options">
+                        <label><input type="checkbox" id="toggle-traces" checked />Jejak perjalanan</label>
+                        <label><input type="checkbox" id="toggle-remaining" checked />Jalur belum dilalui</label>
+                    </div>
+                </div>
+                <div class="map-and-team">
+                    <div class="map-canvas" id="map-canvas">
+                        <div id="map-slot" class="leaflet-container-slot" aria-label="Peta posisi dan perjalanan tim"></div>
+                        <div class="map-loading" id="map-loading">@Html.Icon("loader-circle", 24, 2, "spin")<span>Menyiapkan peta tim…</span></div>
+                        <div class="map-location"><span class="status-dot"></span><strong id="map-place">Jakarta Selatan</strong><span id="map-region">DKI Jakarta</span></div>
+                        <div class="map-controls">
+                            <button id="map-zoom-in" aria-label="Perbesar peta">@Html.Icon("plus", 18)</button>
+                            <button id="map-zoom-out" aria-label="Perkecil peta">@Html.Icon("minus", 18)</button>
+                            <span></span>
+                            <button id="map-fit" aria-label="Tampilkan seluruh tim">@Html.Icon("crosshair", 18)</button>
+                            <button id="map-full" aria-label="Perluas peta">@Html.Icon("maximize-2", 17)</button>
+                        </div>
+                        <button class="map-style" id="map-style">@Html.Icon("layers", 16)<span>Detail jalan</span></button>
+                        <div class="map-legend"><span><i class="legend-line"></i>Sudah dilalui</span><span><i class="legend-dashed"></i>Belum dilalui</span><span><i class="legend-dot"></i>Posisi anggota</span></div>
+                        <div class="map-error" id="map-error" hidden>Peta dasar tidak tersedia. Jejak GPS tetap ditampilkan.</div>
+                        <div class="map-empty" id="map-empty" hidden>Belum ada posisi untuk tanggal ini.</div>
+                    </div>
+                    <aside class="team-live">
+                        <div class="team-live-heading">
+                            <h3>Tim di lapangan <span id="team-count">0</span></h3>
+                            <label class="status-filter" title="Filter status anggota">
+                                @Html.Icon("sliders-horizontal", 16)
+                                <select id="status-filter" aria-label="Filter status">
+                                    <option value="all">Semua status</option>
+                                    <option value="bergerak">Bergerak</option>
+                                    <option value="berhenti">Berhenti</option>
+                                    <option value="offline">Offline</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label class="team-search">@Html.Icon("search", 15)<input id="team-search" placeholder="Cari anggota…" aria-label="Cari anggota tim di peta" /></label>
+                        <div class="team-live-list" id="team-list"></div>
+                        <div class="selected-member-detail" id="selected-detail" hidden></div>
+                        <button class="team-all" data-view="team">Lihat semua anggota @Html.Icon("arrow-right", 15)</button>
+                    </aside>
+                </div>
+            </section>
+
+            <section class="panel report-panel" id="reports-panel">
+                <div class="report-icon">@Html.Icon("file-chart-column", 35)</div>
+                <div class="report-content">
+                    <span class="eyebrow">LAPORAN OPERASIONAL</span>
+                    <h2>Perjalanan hari ini, dalam satu laporan.</h2>
+                    <p>Unduh rincian per anggota: wilayah, status, kecepatan, arah, jarak tempuh, dan GPS terakhir, beserta total rute dan jalur yang belum dilalui per wilayah. Berkas CSV dapat dibuka di Excel atau Google Sheets.</p>
+                    <div class="report-facts" id="report-facts"></div>
+                    <div class="report-buttons">
+                        <button class="button-primary" id="btn-export-report">@Html.Icon("download", 16)<span id="report-download-label">Unduh CSV</span></button>
+                        <button class="button-secondary" data-dialog="import">@Html.Icon("file-up", 16)Impor data GPS</button>
+                    </div>
+                    <p class="report-disclaimer">@Html.Icon("shield-check", 14)<span id="report-disclaimer"></span></p>
+                </div>
+            </section>
+
+            <section class="panel member-table-panel" id="members-panel">
+                <div class="panel-heading">
+                    <div><h2>Performa tim</h2><p>Detail perjalanan dan kondisi anggota di lapangan.</p></div>
+                    <button class="button-secondary" data-dialog="member">@Html.Icon("plus", 15)Tambah anggota</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="member-table">
+                        <thead>
+                            <tr>
+                                <th>Anggota</th><th>Wilayah</th><th>Status</th><th>Kecepatan</th><th>Arah</th>
+                                <th><button id="sort-distance">Jarak tempuh @Html.Icon("arrow-down-up", 12)</button></th>
+                                <th>Daya GPS</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="member-rows"></tbody>
+                    </table>
+                    <div class="table-empty" id="member-empty" hidden>
+                        @Html.Icon("users", 25)
+                        <h3>Belum ada anggota ditampilkan</h3>
+                        <p>Tambahkan anggota atau sesuaikan filter Anda.</p>
+                        <button class="button-secondary" data-dialog="member">@Html.Icon("plus", 15)Tambah anggota</button>
+                    </div>
+                </div>
+                <button class="table-footer-button" id="member-all" data-view="team">Lihat semua <span id="member-all-count">0</span> anggota @Html.Icon("arrow-up-right", 14)</button>
+            </section>
+
+            <section class="panel routes-panel" id="routes-panel">
+                <div class="panel-heading">
+                    <div><h2>Cakupan per wilayah</h2><p>Jalur rencana dibandingkan dengan perjalanan yang tercatat.</p></div>
+                    <button class="button-secondary" data-dialog="import">@Html.Icon("plus", 15)Impor rute</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="member-table routes-table">
+                        <thead><tr><th>Wilayah &amp; rute</th><th>Total rute</th><th>Sudah dilalui</th><th>Belum dilalui</th><th>Cakupan</th><th></th></tr></thead>
+                        <tbody id="route-rows"></tbody>
+                    </table>
+                    <div class="table-empty" id="route-empty" hidden>
+                        @Html.Icon("route", 25)
+                        <h3>Rute rencana belum tersedia</h3>
+                        <p>Impor GeoJSON untuk mengukur wilayah yang belum dilalui.</p>
+                        <button class="button-secondary" data-dialog="import">@Html.Icon("plus", 15)Impor rute</button>
+                    </div>
+                </div>
+                <div class="route-note">Cakupan dihitung dari segmen rute dalam radius 50 meter dari jejak GPS. <span id="route-demo-note"></span></div>
+            </section>
+
+            <div class="demo-banner" id="demo-banner">
+                <span class="demo-banner-icon">@Html.Icon("file-up", 19)</span>
+                <div><strong>Siap melihat perjalanan tim Anda?</strong><p>Hubungkan GPS dan gunakan data lapangan yang sebenarnya.</p></div>
+                <button data-dialog="account">Hubungkan tim @Html.Icon("chevron-right", 16)</button>
+                <button class="icon-button" id="dismiss-demo" aria-label="Tutup informasi demo">@Html.Icon("x", 16)</button>
+            </div>
+
+            <footer class="dashboard-footer">
+                <span>© 2026 Leader Dashboard. Setiap langkah berarti.</span>
+                <div><span class="status-dot"></span><span id="footer-status"></span><i></i>Zona waktu WIB (UTC+7)</div>
+            </footer>
+        </main>
+    </div>
+    <partial name="_SFDDialogs" />
+    <div class="app-toast" id="toast" role="status" hidden>
+        @Html.Icon("check", 17)<span id="toast-text"></span>
+        <button class="icon-button" id="toast-close" aria-label="Tutup pesan">@Html.Icon("x", 15)</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/leaflet/leaflet.js"></script>
+    <script type="module" src="~/js/SFDDashboard.js" asp-append-version="true"></script>
+}

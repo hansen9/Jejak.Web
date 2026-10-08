@@ -1,4 +1,4 @@
-import { auth, ApiError } from './common.js';
+import { auth, ApiError } from './SFDCommon.js';
 
 const form = document.getElementById('login-form');
 const error = document.getElementById('login-error');

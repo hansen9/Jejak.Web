@@ -14,4 +14,4 @@ Data lives in SQLite (`ConnectionStrings:Default`, default `sfd.db`), created on
 - `Controllers/` — `PagesController` (pages, robots, sitemap, error), `AccountController` (cookie login/logout), `TrackingApiController` (JSON API).
 - `Services/` — `Geo` and `TrackingBuilder` (distance and route coverage), `ImportParsers` (GeoJSON/CSV), `DemoData`, `TrackingService`.
 - `Views/` — Razor layout, dashboard and device pages; `_Sidebar`, `_Topbar`, `_Dialogs` partials.
-- `wwwroot/js/` — `dashboard.js`, `device.js`, `map.js` (Leaflet), `common.js`. `wwwroot/css/site.css` is the original stylesheet minus Tailwind wrappers.
+- `wwwroot/js/` — `dashboard.js`, `device.js`, `map.js` (Leaflet), `common.js`. Styles live in `<style>` blocks inside each view/partial (shared base in `_SFDLayout.cshtml`).

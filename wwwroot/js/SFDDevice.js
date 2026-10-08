@@ -1,4 +1,4 @@
-import { ApiError, api, auth, boot, esc, icon, num } from './common.js';
+import { ApiError, api, auth, boot, esc, icon, num } from './SFDCommon.js';
 
 // Sends this device's GPS position to the signed-in leader's workspace, at most once every 10 seconds.
 const SEND_INTERVAL_MS = 10000;

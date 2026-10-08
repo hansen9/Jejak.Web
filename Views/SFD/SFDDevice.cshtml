@@ -1,0 +1,65 @@
+@{
+    Layout = "_SFDLayout";
+}
+<style>
+    .device-header { display: flex; align-items: center; justify-content: space-between; padding: 26px 40px; background: white; border-bottom: 1px solid var(--line); }
+    .device-heading { text-align: center; margin-bottom: 28px; }
+    .device-heading>.eyebrow { justify-content: center; }
+    .device-heading h1 { font-size: 38px; letter-spacing: -1.5px; font-weight: 750; color: #684675; }
+    .device-heading p { font-size: 11px; color: #ad8fbb; margin-top: 10px; }
+    .device-footer { text-align: center; font-size: 9px; color: #b69ac4; margin-top: 20px; }
+    .device-heading p { color: #96739f; }
+    .device-footer { color: #9e81ac; }
+    @@media (max-width: 760px) {
+      .device-header { padding: 20px; }
+      .device-header .brand { font-size: 27px; }
+      .device-header .button-text { font-size: 9px; }
+    }
+    .device-member-label { display: flex; flex-direction: column; gap: 7px; font-size: 11px; font-weight: 600; color: #846393; }
+    .device-member-label select { min-height: 42px; padding: 10px 12px; border: 1px solid #e6dceb; color: #7b6089; background: #fefcfe; border-radius: 7px; font-size: 11px; font-weight: 450; }
+    .device-page { min-height: 100dvh; background: #f7f3fa; }
+    .device-main { max-width: 480px; margin: auto; padding: 50px 20px; }
+    .device-card { padding: 27px; }
+    .device-card h2 { color: #80518f; font-size: 19px; font-weight: 700; letter-spacing: -.5px; margin-top: 14px; }
+    .device-description { font-size: 11px; color: #ae8dbc; line-height: 1.7; margin-top: 9px; margin-bottom: 20px; }
+    .device-card-title { display: flex; align-items: center; justify-content: space-between; }
+    .device-card-title h2 { margin-top: 8px; }
+    .device-member-label { margin: 15px 0 20px; }
+    .device-card>.info-box { margin-top: 17px; }
+    .device-card>.button-text { display: flex; margin: 12px auto 0; }
+    .device-card>.form-error { margin: 15px 0; }
+    .gps-readings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .gps-readings>div { background: #f8f3fb; border-radius: 8px; padding: 12px; color: #aa87ba; }
+    .gps-readings small { display: block; font-size: 9px; margin: 9px 0 6px; color: #b297bf; }
+    .gps-readings strong { font-size: 11px; color: #946aa4; font-weight: 600; }
+    .gps-wait { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 25px 10px; color: #a386b2; }
+    .gps-wait p { font-size: 10px; }
+    .stop-button { background: var(--copper-light); color: var(--copper); }
+    .device-member-label { color: #7c598b; }
+    .device-description { color: #96739f; }
+    @@media (max-width: 760px) {
+      .device-main { padding-top: 35px; }
+      .device-card { padding: 25px; }
+      .device-member-label select { min-height: 44px; font-size: 12px; }
+      .device-card .button-text { min-height: 44px; }
+    }
+</style>
+<div class="device-page">
+    <header class="device-header">
+        <a class="brand" href="/"><span class="brand-symbol">@Html.Icon("route", 23)</span>Leader Dashboard</a>
+        <a class="button-text" href="/">@Html.Icon("arrow-left", 16)Kembali ke dashboard</a>
+    </header>
+    <main class="device-main">
+        <div class="device-heading">
+            <span class="eyebrow">HUBUNGKAN SETIAP LANGKAH</span>
+            <h1>GPS perangkat.</h1>
+            <p>Kirim posisi perangkat ke ruang kerja leader Anda.</p>
+        </div>
+        <section class="panel device-card" id="device-card"></section>
+        <p class="device-footer">Lokasi hanya terlihat oleh akun pemilik ruang kerja.</p>
+    </main>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/SFDDevice.js" asp-append-version="true"></script>
+}

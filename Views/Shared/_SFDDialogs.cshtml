@@ -1,5 +1,62 @@
 @* Modal dialogs. Native <dialog>: Escape, focus trapping and the backdrop come from the browser. *@
 
+<style>
+    .app-dialog { background: white; padding: 30px; border-radius: 14px !important; border: 1px solid #efe9f4; max-width: 465px; max-height: calc(100dvh - 40px); overflow-y: auto; gap: 14px; }
+    .app-dialog>[data-radix-dialog-title], .app-dialog>h2 { color: #694879; font-weight: 750; font-size: 21px; letter-spacing: -.6px; }
+    .app-dialog>[data-radix-dialog-description], .app-dialog>p { font-size: 11px; line-height: 1.9; color: #a38baf; }
+    .dialog-bottom { text-align: center; border-top: 1px solid var(--line); padding-top: 14px; font-size: 9px; color: #ad97b9; line-height: 1.9; }
+    .dialog-bottom .button-text { display: block; width: 100%; font-size: 10px; }
+    .optional { font-size: 9px; color: #b6a3c0; }
+    .color-picker { display: flex; align-items: center; gap: 13px; margin: 13px 0 5px; }
+    .color-picker>button { width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; outline: 1px solid transparent; }
+    .color-picker>button.selected { outline: 2px solid var(--plum); outline-offset: 2px; }
+    .locked-action { display: flex; flex-direction: column; align-items: center; padding: 20px 5px; gap: 12px; color: #a389af; text-align: center; }
+    .locked-action h3 { font-size: 14px; color: #80548d; font-weight: 650; }
+    .locked-action p { font-size: 11px; line-height: 1.9; }
+    .locked-action .button-primary { margin-top: 4px; }
+    .account-summary { display: flex; align-items: center; gap: 10px; background: #faf6fc; padding: 13px; border-radius: 8px; }
+    .account-summary>div { flex: 1; }
+    .account-summary strong { font-size: 12px; color: #815c91; display: block; }
+    .account-summary small { font-size: 10px; color: #b296bf; display: block; margin-top: 4px; }
+    .account-summary>svg { color: var(--green); }
+    .file-upload { position: relative; border: 1.5px dashed #d1bedb; border-radius: 9px; background: #faf6fc; display: flex !important; align-items: center; text-align: center; padding: 25px 15px; gap: 10px !important; overflow: hidden; cursor: pointer; }
+    .file-upload strong { font-size: 11px; font-weight: 550; max-width: 100%; word-break: break-word; }
+    .file-upload small { font-size: 9px; font-weight: 450; color: #b99dc6; }
+    .file-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .file-upload:focus-within { outline: 2px solid var(--plum); }
+    .help-steps { display: flex; flex-direction: column; gap: 19px; margin: 10px 0 5px; }
+    .help-steps>div { display: flex; gap: 13px; color: #b194be; }
+    .help-steps h3 { font-size: 11px; color: #8a5b9a; font-weight: 650; margin: 0 0 5px; }
+    .help-steps p { font-size: 10px; color: #ad92bb; line-height: 1.8; }
+    .notification-list>button { display: flex; align-items: flex-start; width: 100%; text-align: left; gap: 13px; border: none; padding: 15px 0; border-bottom: 1px solid var(--line); background: transparent; }
+    .notification-list>button:hover { background: #fcf8fd; }
+    .alert-icon { background: #f7edf7; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; color: #ae8abd; border-radius: 8px; flex-shrink: 0; }
+    .alert-icon.berhenti { background: var(--copper-light); color: var(--copper); }
+    .notification-list strong { font-size: 11px; color: #8b5d9b; }
+    .notification-list p { font-size: 10px; color: #b296c0; margin-top: 5px; line-height: 1.6; }
+    .notification-list small { font-size: 8px; color: #c2accd; display: block; margin-top: 5px; }
+    .app-dialog>p { color: #86708f; }
+    .help-steps p { color: #8d709a; }
+    .locked-action, .dialog-bottom { color: #8e709b; }
+    .notification-list p { color: #967aa2; }
+    .notification-list small { color: #9d86a8; }
+    @@media (max-width: 760px) {
+      .app-dialog { width: calc(100% - 28px); padding: 25px; }
+      .app-dialog>h2 { font-size: 21px; }
+      .color-picker { gap: 13px; }
+      .color-picker>button { width: 22px; height: 22px; }
+      .color-picker>button { min-width: 25px; min-height: 25px; }
+      .color-picker { gap: 12px; }
+    }
+    dialog.app-dialog { position: fixed; inset: 0; margin: auto; width: min(465px, calc(100% - 28px)); color: var(--ink); box-shadow: 0 20px 60px #302a3855; }
+    dialog.app-dialog[open] { display: grid; align-content: start; }
+    dialog.app-dialog::backdrop { background: #302a38b3; }
+    .dialog-close { position: absolute; top: 14px; right: 14px; border: none; background: transparent; color: var(--subtle); width: 30px; height: 30px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+    .dialog-close:hover { background: var(--plum-light); color: var(--plum); }
+    .app-dialog h2 { margin: 0; }
+    .app-dialog .button-primary, .app-dialog .button-secondary { text-align: center; justify-content: center; }
+</style>
+
 <dialog class="app-dialog" id="dlg-account" aria-labelledby="account-title">
     <button class="dialog-close" data-close aria-label="Tutup">@Html.Icon("x", 17)</button>
     <div id="account-body"></div>
@@ -23,7 +80,7 @@
         <div>
             <span class="form-label">Warna jejak GPS</span>
             <div class="color-picker" id="color-picker">
-                @foreach (var (color, index) in SFD.Services.TrackingBuilder.MemberColors.Select((c, i) => (c, i)))
+                @foreach (var (color, index) in SFD.Services.SFDTrackingBuilder.MemberColors.Select((c, i) => (c, i)))
                 {
                     <button type="button" data-color="@color" aria-label="Pilih warna @color" aria-pressed="@(index == 0 ? "true" : "false")" class="@(index == 0 ? "selected" : "")" style="background:@color"></button>
                 }

@@ -1,4 +1,4 @@
-import { esc, safeColor } from './common.js';
+import { esc, safeColor } from './SFDCommon.js';
 
 const TILES = {
   standard: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',

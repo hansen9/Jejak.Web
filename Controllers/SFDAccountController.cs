@@ -15,13 +15,13 @@ namespace SFD.Controllers;
 [ApiController]
 [Route("akun")]
 [AllowAnonymous]
-public class AccountController(AppDbContext db, IHttpClientFactory http, IAntiforgery antiforgery, ILogger<AccountController> log) : ControllerBase
+public class SFDAccountController(SFDAppDbContext db, IHttpClientFactory http, IAntiforgery antiforgery, ILogger<SFDAccountController> log) : ControllerBase
 {
     const string LoginEndpoint = "https://www.solofleet.com/AndroidDevice/logindirect";
 
     [HttpPost("masuk")]
     [EnableRateLimiting("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] SFDLoginRequest request)
     {
         var username = request.Username?.Trim() ?? "";
         if (username.Length is 0 or > 254 || string.IsNullOrEmpty(request.Password)) return Unauthorized();
@@ -51,7 +51,7 @@ public class AccountController(AppDbContext db, IHttpClientFactory http, IAntifo
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == key);
         if (user is null)
         {
-            user = new AppUser { Email = key, Name = name };
+            user = new SFDAppUser { Email = key, Name = name };
             db.Users.Add(user);
             await db.SaveChangesAsync();
         }
@@ -97,6 +97,6 @@ public class AccountController(AppDbContext db, IHttpClientFactory http, IAntifo
     object Session(ClaimsPrincipal principal)
     {
         HttpContext.User = principal;
-        return new { user = PagesController.CurrentUser(principal), csrf = antiforgery.GetAndStoreTokens(HttpContext).RequestToken };
+        return new { user = SFDPagesController.CurrentUser(principal), csrf = antiforgery.GetAndStoreTokens(HttpContext).RequestToken };
     }
 }

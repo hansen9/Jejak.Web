@@ -13,7 +13,7 @@ namespace SFD.Controllers;
 [ApiController]
 [Route("api")]
 [Authorize]
-public partial class TrackingApiController(AppDbContext db, TrackingService tracking) : ControllerBase
+public partial class SFDTrackingApiController(SFDAppDbContext db, SFDTrackingService tracking) : ControllerBase
 {
     [GeneratedRegex("^#[0-9a-fA-F]{6}$")]
     private static partial Regex HexColor();
@@ -25,9 +25,9 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
     [AllowAnonymous]
     public async Task<IActionResult> Get([FromQuery] string? date, [FromQuery] bool demo, CancellationToken ct)
     {
-        date ??= TrackingBuilder.Today();
-        if (!TrackingBuilder.TryDayRange(date, out _, out _)) return BadRequest(new { error = "Tanggal tidak valid." });
-        if (demo) return Ok(DemoData.Build(date));
+        date ??= SFDTrackingBuilder.Today();
+        if (!SFDTrackingBuilder.TryDayRange(date, out _, out _)) return BadRequest(new { error = "Tanggal tidak valid." });
+        if (demo) return Ok(SFDDemoData.Build(date));
         if (User.Identity?.IsAuthenticated != true) return Unauthorized();
         return Ok(await tracking.BuildAsync(OwnerId, date, ct));
     }
@@ -41,7 +41,7 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
     }
 
     [HttpPost("members")]
-    public async Task<IActionResult> AddMember([FromBody] MemberRequest request, CancellationToken ct)
+    public async Task<IActionResult> AddMember([FromBody] SFDMemberRequest request, CancellationToken ct)
     {
         var name = request.Name?.Trim() ?? "";
         var area = request.Area?.Trim() ?? "";
@@ -50,14 +50,14 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
         if (name.Length is 0 or > 100 || area.Length > 100 || phone.Length > 30 || (color.Length > 0 && !HexColor().IsMatch(color)))
             return BadRequest(new { error = "Data anggota tidak valid." });
 
-        db.Members.Add(new TeamMember { OwnerId = OwnerId, Name = name, Area = area, Color = color, Phone = phone.Length > 0 ? phone : null });
+        db.Members.Add(new SFDTeamMember { OwnerId = OwnerId, Name = name, Area = area, Color = color, Phone = phone.Length > 0 ? phone : null });
         await db.SaveChangesAsync(ct);
         return StatusCode(StatusCodes.Status201Created);
     }
 
     /// <summary>One position from the device sender page.</summary>
     [HttpPost("gps")]
-    public async Task<IActionResult> AddPoint([FromBody] GpsPointRequest p, CancellationToken ct)
+    public async Task<IActionResult> AddPoint([FromBody] SFDGpsPointRequest p, CancellationToken ct)
     {
         var owner = OwnerId;
         var at = p.RecordedAt.ToUniversalTime();
@@ -67,7 +67,7 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
             return BadRequest(new { error = "Titik GPS tidak valid." });
         if (!await db.Members.AnyAsync(m => m.Id == p.MemberId && m.OwnerId == owner, ct)) return NotFound();
 
-        db.GpsPoints.Add(new GpsPoint
+        db.GpsPoints.Add(new SFDGpsPoint
         {
             OwnerId = owner, MemberId = p.MemberId, Latitude = p.Latitude, Longitude = p.Longitude,
             Speed = p.Speed, Bearing = p.Bearing, Accuracy = p.Accuracy, RecordedAtUtc = at,
@@ -77,27 +77,27 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
     }
 
     [HttpPost("import/routes")]
-    [RequestSizeLimit(ImportParsers.MaxFileBytes + 64 * 1024)]
+    [RequestSizeLimit(SFDImportParsers.MaxFileBytes + 64 * 1024)]
     public async Task<IActionResult> ImportRoutes(IFormFile? file, CancellationToken ct)
     {
         var text = await ReadUpload(file, ct);
         if (text is null) return BadRequest(new { error = "Ukuran berkas maksimal 5 MB." });
         try
         {
-            var routes = ImportParsers.ParseGeoJson(text);
+            var routes = SFDImportParsers.ParseGeoJson(text);
             var owner = OwnerId;
-            db.Routes.AddRange(routes.Select(r => new PlannedRoute
+            db.Routes.AddRange(routes.Select(r => new SFDPlannedRoute
             {
                 OwnerId = owner, Name = r.Name, Area = r.Area, CoordinatesJson = JsonSerializer.Serialize(r.Coordinates),
             }));
             await db.SaveChangesAsync(ct);
             return Ok(new { imported = routes.Count });
         }
-        catch (ImportException e) { return BadRequest(new { error = e.Message }); }
+        catch (SFDImportException e) { return BadRequest(new { error = e.Message }); }
     }
 
     [HttpPost("import/gps")]
-    [RequestSizeLimit(ImportParsers.MaxFileBytes + 64 * 1024)]
+    [RequestSizeLimit(SFDImportParsers.MaxFileBytes + 64 * 1024)]
     public async Task<IActionResult> ImportGps(IFormFile? file, [FromForm] Guid member, CancellationToken ct)
     {
         var owner = OwnerId;
@@ -106,9 +106,9 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
         if (text is null) return BadRequest(new { error = "Ukuran berkas maksimal 5 MB." });
         try
         {
-            var rows = ImportParsers.ParseGpsCsv(text);
+            var rows = SFDImportParsers.ParseGpsCsv(text);
             // One SaveChanges is one transaction: a bad file imports nothing instead of half the rows.
-            db.GpsPoints.AddRange(rows.Select(r => new GpsPoint
+            db.GpsPoints.AddRange(rows.Select(r => new SFDGpsPoint
             {
                 OwnerId = owner, MemberId = member, Latitude = r.Latitude, Longitude = r.Longitude,
                 Speed = r.Speed, Bearing = r.Bearing, Accuracy = 0, RecordedAtUtc = r.RecordedAtUtc,
@@ -116,13 +116,13 @@ public partial class TrackingApiController(AppDbContext db, TrackingService trac
             await db.SaveChangesAsync(ct);
             return Ok(new { imported = rows.Count });
         }
-        catch (ImportException e) { return BadRequest(new { error = e.Message }); }
+        catch (SFDImportException e) { return BadRequest(new { error = e.Message }); }
     }
 
     static async Task<string?> ReadUpload(IFormFile? file, CancellationToken ct)
     {
         if (file is null || file.Length == 0) return "";
-        if (file.Length > ImportParsers.MaxFileBytes) return null;
+        if (file.Length > SFDImportParsers.MaxFileBytes) return null;
         using var reader = new StreamReader(file.OpenReadStream());
         return await reader.ReadToEndAsync(ct);
     }

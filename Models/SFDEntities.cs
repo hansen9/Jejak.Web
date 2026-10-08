@@ -1,6 +1,6 @@
 namespace SFD.Models;
 
-public class AppUser
+public class SFDAppUser
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Email { get; set; } = "";
@@ -9,7 +9,7 @@ public class AppUser
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 }
 
-public class TeamMember
+public class SFDTeamMember
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid OwnerId { get; set; }
@@ -20,7 +20,7 @@ public class TeamMember
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 }
 
-public class GpsPoint
+public class SFDGpsPoint
 {
     public long Id { get; set; }
     public Guid OwnerId { get; set; }
@@ -33,7 +33,7 @@ public class GpsPoint
     public DateTime RecordedAtUtc { get; set; }
 }
 
-public class PlannedRoute
+public class SFDPlannedRoute
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid OwnerId { get; set; }

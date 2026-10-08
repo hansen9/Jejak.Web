@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace SFD.Controllers;
 
 [AllowAnonymous]
-public class PagesController : Controller
+public class SFDPagesController : Controller
 {
     /// <summary>Signed-in user as the page's JavaScript sees it; null when signed out.</summary>
     public static object? CurrentUser(ClaimsPrincipal user) =>
@@ -26,7 +26,7 @@ public class PagesController : Controller
         NoStore();
         ViewData["Title"] = "Leader Dashboard — Pemantauan Tim";
         ViewData["Description"] = "Pantau posisi GPS, kecepatan, arah perjalanan, jarak tempuh anggota, dan cakupan rute tim lapangan dalam satu dashboard.";
-        return View("Dashboard");
+        return View("~/Views/SFD/SFDDashboard.cshtml");
     }
 
     [HttpGet("/masuk")]
@@ -40,7 +40,7 @@ public class PagesController : Controller
         ViewData["Description"] = "Masuk sebagai leader untuk mengelola data tim lapangan Anda di Leader Dashboard.";
         ViewData["NoIndex"] = true;
         ViewBag.ReturnUrl = target;
-        return View();
+        return View("~/Views/SFD/SFDLogin.cshtml");
     }
 
     [HttpGet("/perangkat")]
@@ -49,7 +49,7 @@ public class PagesController : Controller
         NoStore();
         ViewData["Title"] = "GPS Perangkat — Leader Dashboard";
         ViewData["Description"] = "Hubungkan perangkat yang Anda kelola untuk mengirim lokasi GPS secara privat ke dashboard Leader Dashboard.";
-        return View();
+        return View("~/Views/SFD/SFDDevice.cshtml");
     }
 
     [HttpGet("/error/{code:int?}")]
@@ -65,13 +65,13 @@ public class PagesController : Controller
         ViewBag.Details = status == 404 ? "Halaman yang Anda cari tidak ditemukan." : "Terjadi kesalahan yang tidak terduga. Silakan muat ulang halaman.";
         ViewBag.RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         Response.StatusCode = status;
-        return View();
+        return View("~/Views/SFD/SFDError.cshtml");
     }
 
     [HttpGet("/robots.txt")]
     public IActionResult Robots()
     {
-        var origin = SiteOrigin.From(Request);
+        var origin = SFDSiteOrigin.From(Request);
         var host = Request.Host.Host;
         string[] unpublished = [".app-preview.com", ".app-preview.io", ".hostingersite.com", ".hostingersite.dev"];
         const string signal = "Content-Signal: search=yes, ai-input=yes, ai-train=no";
@@ -92,7 +92,7 @@ public class PagesController : Controller
     [HttpGet("/sitemap.xml")]
     public IActionResult Sitemap()
     {
-        var origin = SiteOrigin.From(Request);
+        var origin = SFDSiteOrigin.From(Request);
         var urls = string.Concat(new[] { "/", "/perangkat" }.Select(p => $"\t<url>\n\t\t<loc>{System.Net.WebUtility.HtmlEncode(origin + p)}</loc>\n\t</url>\n"));
         Response.Headers.CacheControl = "public, max-age=3600";
         Response.Headers.AccessControlAllowOrigin = "*";

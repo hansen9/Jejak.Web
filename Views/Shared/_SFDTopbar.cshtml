@@ -1,0 +1,54 @@
+<style>
+    .account-avatar { width: 34px; height: 34px; border-radius: 50%; background: #eadfe8; color: #7a5c79; display: inline-flex; justify-content: center; align-items: center; font-size: 11px; font-weight: 750; flex-shrink: 0; border: 3px solid white; }
+    .topbar { height: 75px; padding: 0 35px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .breadcrumb { display: flex; align-items: center; gap: 11px; font-size: 11px; color: #9d94a4; }
+    .breadcrumb strong { color: #655970; font-weight: 600; }
+    .topbar-actions { display: flex; align-items: center; gap: 17px; }
+    .global-search { display: flex; align-items: center; gap: 9px; color: #a196aa; background: #f8f7fa; padding: 8px 11px; border-radius: 7px; }
+    .global-search input { width: 218px; border: none; background: transparent; outline: none; font-size: 11px; }
+    .global-search input:focus { outline: none; }
+    .global-search kbd { display: flex; align-items: center; justify-content: center; border: 1px solid #eae6ed; border-radius: 3px; width: 18px; height: 20px; font-size: 10px; background: var(--paper); }
+    .notification-button { position: relative; }
+    .notification-button>span { position: absolute; width: 4px; height: 4px; border-radius: 50%; top: 4px; right: 6px; background: var(--copper); border: 1px solid white; }
+    .topbar-divider { width: 1px; height: 26px; background: var(--line); margin-left: -2px; }
+    .account-avatar { width: 32px; height: 32px; border: 2px solid white; outline: 1px solid #ede5ee; }
+    @@media (min-width: 1600px) {
+      .topbar { padding: 0 45px; }
+    }
+    @@media (max-width: 1250px) {
+      .topbar { padding: 0 24px; }
+    }
+    @@media (max-width: 1020px) {
+      .topbar { height: 68px; }
+      .global-search input { width: 175px; }
+      .topbar-actions { gap: 12px; }
+    }
+    @@media (max-width: 760px) {
+      .topbar { padding: 0 20px; height: 54px; }
+      .breadcrumb { display: none; }
+      .topbar-actions { width: 100%; gap: 13px; }
+      .global-search { flex: 1; min-width: 0; padding: 7px 10px; }
+      .global-search input { width: 100%; font-size: 10px; }
+      .global-search kbd { display: none; }
+      .topbar-divider { display: none; }
+      .account-avatar { width: 30px; height: 30px; font-size: 9px; }
+      .notification-button { width: 33px; }
+      .topbar .icon-button { min-width: 40px; min-height: 40px; }
+      .account-avatar { width: 35px; height: 35px; }
+    }
+</style>
+<header class="topbar">
+    <div class="breadcrumb">
+        <span>Ruang kerja</span>@Html.Icon("chevron-right", 14)<strong id="crumb">Ringkasan</strong>
+    </div>
+    <div class="topbar-actions">
+        <label class="global-search">
+            @Html.Icon("search", 17)
+            <input id="global-search" placeholder="Cari anggota atau wilayah…" aria-label="Cari anggota atau wilayah" />
+            <kbd>/</kbd>
+        </label>
+        <button class="notification-button icon-button" data-dialog="notifications" aria-label="Lihat notifikasi">@Html.Icon("bell", 20, 1.6)<span></span></button>
+        <span class="topbar-divider"></span>
+        <button class="account-avatar" id="top-avatar" data-dialog="account" aria-label="Akun leader">RL</button>
+    </div>
+</header>

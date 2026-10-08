@@ -1,0 +1,52 @@
+@{
+    (string Id, string Label, string Icon)[] items =
+    [
+        ("dashboard", "Ringkasan", "layout-dashboard"),
+        ("map", "Peta langsung", "map"),
+        ("team", "Anggota tim", "users"),
+        ("routes", "Wilayah & rute", "route"),
+        ("analytics", "Analitik", "chart-no-axes-combined"),
+        ("reports", "Laporan", "file-chart-column"),
+    ];
+}
+<div class="mobile-bar">
+    <a class="brand" href="/"><span class="brand-symbol">@Html.Icon("route", 23)</span>Leader Dashboard</a>
+    <button class="icon-button" id="nav-open" aria-label="Buka navigasi">@Html.Icon("menu", 22)</button>
+</div>
+<div id="nav-scrim-slot"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+        <a class="brand" href="/"><span class="brand-symbol">@Html.Icon("route", 23, 2.1)</span>Leader Dashboard</a>
+        <button class="mobile-close icon-button" id="nav-close" aria-label="Tutup navigasi">@Html.Icon("x", 20)</button>
+    </div>
+    <div class="brand-caption">SETIAP LANGKAH TERLIHAT.</div>
+    <button class="workspace" data-dialog="account">
+        <span class="workspace-icon">@Html.Icon("users", 19)</span>
+        <span><strong>Tim Lapangan</strong><small>Jakarta Selatan</small></span>
+        @Html.Icon("chevron-down", 15)
+    </button>
+    <div class="nav-caption">RUANG KERJA</div>
+    <nav aria-label="Navigasi utama">
+        @foreach (var item in items)
+        {
+            <button class="nav-item" data-nav="@item.Id" data-label="@item.Label">
+                @Html.Icon(item.Icon, 20, 1.7)<span>@item.Label</span>
+                @if (item.Id == "map") { <span class="nav-live"></span> }
+                @Html.Icon("chevron-right", 15, 2, "nav-chevron")
+            </button>
+        }
+    </nav>
+    <div class="sidebar-bottom">
+        <div class="connection-note">
+            <span class="status-dot copper" id="conn-dot"></span>
+            <div><strong id="conn-title">Mode demonstrasi</strong><small id="conn-sub">Jelajahi dengan data contoh</small></div>
+        </div>
+        <button class="nav-item" data-dialog="account">@Html.Icon("settings-2", 19, 1.7)<span>Pengaturan</span></button>
+        <button class="nav-item" data-dialog="help">@Html.Icon("circle-help", 19, 1.7)<span>Bantuan &amp; panduan</span></button>
+        <button class="profile-button" data-dialog="account">
+            <span class="profile-avatar" id="side-avatar">RL</span>
+            <span><strong id="side-name">Ruang Leader</strong><small id="side-sub">Pratinjau dashboard</small></span>
+            @Html.Icon("chevron-down", 15)
+        </button>
+    </div>
+</aside>

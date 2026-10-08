@@ -1,0 +1,34 @@
+<div class="login-page">
+    <header class="device-header">
+        <a class="brand" href="/"><span class="brand-symbol">@Html.Icon("route", 23)</span>Leader Dashboard</a>
+        <a class="button-text" href="/">@Html.Icon("arrow-left", 16)Kembali ke dashboard</a>
+    </header>
+    <main class="login-main">
+        <div class="device-heading">
+            <span class="eyebrow">RUANG KERJA LEADER</span>
+            <h1>Selamat datang.</h1>
+            <p>Masuk untuk mengelola data tim lapangan Anda.</p>
+        </div>
+        <section class="panel login-card">
+            <form class="app-form" id="login-form" data-return="@ViewBag.ReturnUrl" novalidate>
+                <label>Username leader
+                    <input name="username" type="text" required maxlength="254" placeholder="Username SoloFleet" autocomplete="username" autofocus />
+                </label>
+                <label>Kata sandi
+                    <span class="password-field">
+                        <input name="password" type="password" required placeholder="Masukkan kata sandi" autocomplete="current-password" />
+                        <button class="password-toggle" type="button" id="password-toggle" aria-pressed="false">Tampilkan</button>
+                    </span>
+                </label>
+                <p class="form-error" id="login-error" role="alert" hidden></p>
+                <button class="button-primary wide" id="login-submit" type="submit">Masuk ke ruang kerja</button>
+                <div class="info-box">@Html.Icon("lock-keyhole", 17)<p>Masuk dengan akun SoloFleet Anda. Hanya leader DMO yang dapat mengakses dashboard ini.</p></div>
+            </form>
+        </section>
+        <p class="device-footer">Data tim hanya dapat diakses oleh akun pemilik.</p>
+    </main>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/login.js" asp-append-version="true"></script>
+}

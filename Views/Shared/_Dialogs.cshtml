@@ -1,0 +1,92 @@
+@* Modal dialogs. Native <dialog>: Escape, focus trapping and the backdrop come from the browser. *@
+
+<dialog class="app-dialog" id="dlg-account" aria-labelledby="account-title">
+    <button class="dialog-close" data-close aria-label="Tutup">@Html.Icon("x", 17)</button>
+    <div id="account-body"></div>
+</dialog>
+
+<dialog class="app-dialog" id="dlg-member" aria-labelledby="member-title">
+    <button class="dialog-close" data-close aria-label="Tutup">@Html.Icon("x", 17)</button>
+    <div class="dialog-symbol">@Html.Icon("users", 23)</div>
+    <h2 id="member-title">Tambah anggota tim</h2>
+    <p>Daftarkan anggota dan wilayah kerja untuk mulai merekam perjalanan.</p>
+    <div class="locked-action" id="member-locked">
+        @Html.Icon("lock-keyhole", 26)
+        <h3>Gunakan ruang kerja privat</h3>
+        <p>Anggota demo tidak dapat diubah. Masuk sebagai leader untuk menambahkan anggota yang tersimpan di database Anda.</p>
+        <button class="button-primary" type="button" data-dialog="account">Masuk sebagai leader</button>
+    </div>
+    <form class="app-form" id="member-form" autocomplete="off">
+        <label>Nama lengkap<input name="name" required maxlength="100" placeholder="Nama anggota" /></label>
+        <label>Wilayah kerja<input name="area" required maxlength="100" placeholder="Contoh: Kebayoran Baru" /></label>
+        <label>Nomor telepon <span class="optional">(opsional)</span><input name="phone" type="tel" maxlength="30" placeholder="08…" /></label>
+        <div>
+            <span class="form-label">Warna jejak GPS</span>
+            <div class="color-picker" id="color-picker">
+                @foreach (var (color, index) in SFD.Services.TrackingBuilder.MemberColors.Select((c, i) => (c, i)))
+                {
+                    <button type="button" data-color="@color" aria-label="Pilih warna @color" aria-pressed="@(index == 0 ? "true" : "false")" class="@(index == 0 ? "selected" : "")" style="background:@color"></button>
+                }
+            </div>
+        </div>
+        <p class="form-error" id="member-error" role="alert" hidden></p>
+        <button class="button-primary wide" id="member-submit">Simpan anggota</button>
+    </form>
+</dialog>
+
+<dialog class="app-dialog" id="dlg-import" aria-labelledby="import-title">
+    <button class="dialog-close" data-close aria-label="Tutup">@Html.Icon("x", 17)</button>
+    <div class="dialog-symbol">@Html.Icon("file-up", 23)</div>
+    <h2 id="import-title">Impor data lapangan</h2>
+    <p>Tambahkan rute rencana atau rekaman perjalanan dari sistem GPS Anda.</p>
+    <div class="locked-action" id="import-locked">
+        @Html.Icon("lock-keyhole", 26)
+        <h3>Simpan ke ruang kerja Anda</h3>
+        <p>Masuk sebagai leader untuk mengimpor data asli. Data demonstrasi tidak akan diubah.</p>
+        <button class="button-primary" type="button" data-dialog="account">Masuk sebagai leader</button>
+    </div>
+    <form class="app-form" id="import-form">
+        <label>Jenis data
+            <select name="type" id="import-type">
+                <option value="route">Rute rencana · GeoJSON</option>
+                <option value="gps">Riwayat perjalanan · CSV</option>
+            </select>
+        </label>
+        <label id="import-member-label" hidden>Anggota pemilik perjalanan
+            <select name="member" id="import-member"><option value="">Pilih anggota</option></select>
+        </label>
+        <label class="file-upload">
+            @Html.Icon("file-up", 28)
+            <strong id="import-file-name">Pilih berkas untuk diimpor</strong>
+            <small id="import-file-hint">.geojson atau .json · maks. 5 MB</small>
+            <input type="file" name="file" id="import-file" required accept=".geojson,.json" />
+        </label>
+        <div class="info-box"><p id="import-help"></p></div>
+        <p class="form-error" id="import-error" role="alert" hidden></p>
+        <p class="form-success" id="import-success" role="status" hidden></p>
+        <button class="button-primary wide" id="import-submit" disabled>Impor &amp; simpan data</button>
+    </form>
+</dialog>
+
+<dialog class="app-dialog help-dialog" id="dlg-help" aria-labelledby="help-title">
+    <button class="dialog-close" data-close aria-label="Tutup">@Html.Icon("x", 17)</button>
+    <div class="dialog-symbol">@Html.Icon("circle-help", 23)</div>
+    <h2 id="help-title">Setiap langkah, lebih jelas.</h2>
+    <p>Panduan singkat menggunakan Leader Dashboard untuk tim Anda.</p>
+    <div class="help-steps">
+        <div>@Html.Icon("map", 20)<section><h3>Kenali peta tim</h3><p>Klik inisial anggota untuk menyorot posisinya. Garis berwarna menunjukkan jejak perjalanan; garis putus-putus menunjukkan bagian rute rencana yang belum dilalui.</p></section></div>
+        <div>@Html.Icon("route", 20)<section><h3>Ukur cakupan, bukan hanya jarak</h3><p>Jarak tempuh adalah akumulasi GPS per anggota. Cakupan rute menghitung segmen rencana dalam radius 50 meter dari jejak perjalanan tim.</p></section></div>
+        <div>@Html.Icon("radio", 20)<section><h3>Hubungkan data asli</h3><p>Masuk menggunakan akun leader, tambahkan anggota, lalu impor rute GeoJSON atau riwayat GPS CSV. Pembaruan database langsung muncul di dashboard.</p></section></div>
+        <div>@Html.Icon("shield-check", 20)<section><h3>Data privat dan izin lokasi</h3><p>Hanya pemilik akun yang dapat melihat data timnya. Pemantauan perangkat memerlukan persetujuan lokasi. Gunakan perangkat hanya dengan izin anggota.</p></section></div>
+    </div>
+    <a class="button-primary wide" href="/perangkat">@Html.Icon("smartphone", 17)Buka pengirim GPS perangkat</a>
+    <p class="dialog-bottom">GPS browser berjalan saat halaman terbuka, bukan sebagai pelacak latar belakang.</p>
+</dialog>
+
+<dialog class="app-dialog" id="dlg-notifications" aria-labelledby="notif-title">
+    <button class="dialog-close" data-close aria-label="Tutup">@Html.Icon("x", 17)</button>
+    <div class="dialog-symbol">@Html.Icon("bell", 23)</div>
+    <h2 id="notif-title">Perhatian untuk tim</h2>
+    <p id="notif-sub"></p>
+    <div class="notification-list" id="notif-list"></div>
+</dialog>

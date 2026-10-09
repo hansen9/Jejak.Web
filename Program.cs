@@ -17,6 +17,7 @@ builder.Services.AddScoped<ISFDMemberRepository, SFDMemberRepository>();
 builder.Services.AddScoped<ISFDGpsPointRepository, SFDGpsPointRepository>();
 builder.Services.AddScoped<ISFDRouteRepository, SFDRouteRepository>();
 builder.Services.AddScoped<SFDTrackingService>();
+builder.Services.AddScoped<SFDBoundaryService>();
 builder.Services.AddSingleton<SFDIconSet>();
 
 builder.Services
@@ -74,6 +75,23 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
+if (app.Environment.IsDevelopment())
+{
+    // DEV ONLY: skip the SoloFleet login so pages can be tested locally. Never runs outside Development.
+    app.Use(async (context, next) =>
+    {
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            context.User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+            [
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "dev-user"),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "Dev Leader"),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, "dev@localhost"),
+            ], "DevBypass"));
+        }
+        await next();
+    });
+}
 app.UseAuthorization();
 
 app.MapGet("/SFD/api/health", () => Results.Ok(new { ok = true })).DisableAntiforgery();

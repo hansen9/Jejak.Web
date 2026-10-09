@@ -1,4 +1,4 @@
-import { esc, safeColor } from './SFDCommon.js';
+import { api, base, esc, safeColor } from './SFDCommon.js';
 
 const TILES = {
   standard: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -39,8 +39,11 @@ export class TeamMap {
     const L = window.L;
     this.map = L.map(this.els.slot, { center: [-6.236, 106.8175], zoom: 13, zoomControl: false, attributionControl: true });
     this.map.attributionControl.setPrefix(false);
+    this.boundaryLayer = L.layerGroup().addTo(this.map);
     this.layer = L.layerGroup().addTo(this.map);
+    this.map.on('moveend', () => this.queueBoundaries());
     this.setTiles();
+    this.queueBoundaries();
     this.els.loading.hidden = true;
     return true;
   }
@@ -52,6 +55,33 @@ export class TeamMap {
     this.tiles = window.L.tileLayer(this.detail ? TILES.detail : TILES.standard, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(this.map);
     this.tiles.on('tileerror', () => { this.els.error.hidden = false; });
     this.tiles.on('load', () => { this.els.error.hidden = true; });
+  }
+
+  /** Debounced: panning fires moveend repeatedly, and every call is a proxied request to SoloFleet. */
+  queueBoundaries() {
+    clearTimeout(this.boundaryTimer);
+    this.boundaryTimer = setTimeout(() => void this.loadBoundaries(), 400);
+  }
+
+  async loadBoundaries() {
+    if (!this.map) return;
+    const b = this.map.getBounds();
+    const query = new URLSearchParams({ latBottom: b.getSouth(), latTop: b.getNorth(), lonLeft: b.getWest(), lonRight: b.getEast() });
+    const seq = this.boundarySeq = (this.boundarySeq ?? 0) + 1;
+    try {
+      const boundaries = await api(`${base}/api/boundaries?${query}`);
+      if (seq !== this.boundarySeq) return; // a newer pan superseded this response
+      const L = window.L;
+      this.boundaryLayer.clearLayers();
+      for (const boundary of boundaries) {
+        const polygon = L.polygon(boundary.points, { color: '#2f6f8f', weight: 2, dashArray: '6 6', fillColor: '#2f6f8f', fillOpacity: 0.06, interactive: !!boundary.name }).addTo(this.boundaryLayer);
+        if (boundary.name) {
+          const tip = document.createElement('span'); // an element, not a string: Leaflet would parse a string as HTML
+          tip.textContent = boundary.name;
+          polygon.bindTooltip(tip, { sticky: true, className: 'team-tooltip' });
+        }
+      }
+    } catch { /* boundaries are decorative: keep the previous ones and retry on the next pan */ }
   }
 
   /** Leaflet caches its size; call after the container is shown, resized or made fullscreen. */

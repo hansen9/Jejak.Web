@@ -12,7 +12,7 @@ namespace SFD.Controllers;
 [ApiController]
 [Route("SFD/api")]
 [Authorize]
-public partial class SFDTrackingApiController(ISFDMemberRepository memberRepo, ISFDGpsPointRepository pointRepo, ISFDRouteRepository routeRepo, SFDTrackingService tracking) : ControllerBase
+public partial class SFDTrackingApiController(ISFDMemberRepository memberRepo, ISFDGpsPointRepository pointRepo, ISFDRouteRepository routeRepo, SFDTrackingService tracking, SFDBoundaryService boundaries, ILogger<SFDTrackingApiController> log) : ControllerBase
 {
     [GeneratedRegex("^#[0-9a-fA-F]{6}$")]
     private static partial Regex HexColor();
@@ -26,6 +26,23 @@ public partial class SFDTrackingApiController(ISFDMemberRepository memberRepo, I
         date ??= SFDTrackingBuilder.Today();
         if (!SFDTrackingBuilder.TryDayRange(date, out _, out _)) return BadRequest(new { error = "Tanggal tidak valid." });
         return Ok(await tracking.BuildAsync(OwnerId, date));
+    }
+
+    /// <summary>Project boundary polygons inside the visible map bounds (proxied from SoloFleet).</summary>
+    [HttpGet("boundaries")]
+    public async Task<IActionResult> Boundaries([FromQuery] double latBottom, [FromQuery] double latTop, [FromQuery] double lonLeft, [FromQuery] double lonRight, CancellationToken ct)
+    {
+        if (!double.IsFinite(latBottom) || !double.IsFinite(latTop) || !double.IsFinite(lonLeft) || !double.IsFinite(lonRight)
+            || Math.Abs(latBottom) > 90 || Math.Abs(latTop) > 90 || Math.Abs(lonLeft) > 180 || Math.Abs(lonRight) > 180
+            || latBottom >= latTop || lonLeft >= lonRight)
+            return BadRequest(new { error = "Batas peta tidak valid." });
+
+        try { return Ok(await boundaries.GetAsync(latBottom, latTop, lonLeft, lonRight, ct)); }
+        catch (Exception e) when (e is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException or FormatException or TaskCanceledException)
+        {
+            log.LogWarning("SoloFleet boundary service unavailable: {Type}", e.GetType().Name);
+            return StatusCode(StatusCodes.Status502BadGateway);
+        }
     }
 
     [HttpGet("members")]

@@ -30,17 +30,25 @@ public partial class SFDTrackingApiController(ISFDMemberRepository memberRepo, I
 
     /// <summary>Project boundary polygons inside the visible map bounds (proxied from SoloFleet).</summary>
     [HttpGet("boundaries")]
-    public async Task<IActionResult> Boundaries([FromQuery] double latBottom, [FromQuery] double latTop, [FromQuery] double lonLeft, [FromQuery] double lonRight, CancellationToken ct)
+    public Task<IActionResult> Boundaries([FromQuery] double latBottom, [FromQuery] double latTop, [FromQuery] double lonLeft, [FromQuery] double lonRight, CancellationToken ct) =>
+        ProxyMapData(latBottom, latTop, lonLeft, lonRight, async () => await boundaries.GetAsync(latBottom, latTop, lonLeft, lonRight, ct));
+
+    /// <summary>POI points inside the visible map bounds, as [lat, lon] pairs (proxied from SoloFleet).</summary>
+    [HttpGet("pois")]
+    public Task<IActionResult> Pois([FromQuery] double latBottom, [FromQuery] double latTop, [FromQuery] double lonLeft, [FromQuery] double lonRight, CancellationToken ct) =>
+        ProxyMapData(latBottom, latTop, lonLeft, lonRight, async () => await boundaries.GetPointsAsync(latBottom, latTop, lonLeft, lonRight, ct));
+
+    async Task<IActionResult> ProxyMapData(double latBottom, double latTop, double lonLeft, double lonRight, Func<Task<object>> fetch)
     {
         if (!double.IsFinite(latBottom) || !double.IsFinite(latTop) || !double.IsFinite(lonLeft) || !double.IsFinite(lonRight)
             || Math.Abs(latBottom) > 90 || Math.Abs(latTop) > 90 || Math.Abs(lonLeft) > 180 || Math.Abs(lonRight) > 180
             || latBottom >= latTop || lonLeft >= lonRight)
             return BadRequest(new { error = "Batas peta tidak valid." });
 
-        try { return Ok(await boundaries.GetAsync(latBottom, latTop, lonLeft, lonRight, ct)); }
+        try { return Ok(await fetch()); }
         catch (Exception e) when (e is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException or FormatException or TaskCanceledException)
         {
-            log.LogWarning("SoloFleet boundary service unavailable: {Type}", e.GetType().Name);
+            log.LogWarning("SoloFleet map service unavailable: {Type}", e.GetType().Name);
             return StatusCode(StatusCodes.Status502BadGateway);
         }
     }

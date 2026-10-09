@@ -40,6 +40,8 @@ export class TeamMap {
     this.map = L.map(this.els.slot, { center: [-6.236, 106.8175], zoom: 13, zoomControl: false, attributionControl: true });
     this.map.attributionControl.setPrefix(false);
     this.boundaryLayer = L.layerGroup().addTo(this.map);
+    this.poiRenderer = L.canvas({ padding: 0.5 });
+    this.poiLayer = L.layerGroup().addTo(this.map);
     this.layer = L.layerGroup().addTo(this.map);
     this.map.on('moveend', () => this.queueBoundaries());
     this.setTiles();
@@ -60,7 +62,7 @@ export class TeamMap {
   /** Debounced: panning fires moveend repeatedly, and every call is a proxied request to SoloFleet. */
   queueBoundaries() {
     clearTimeout(this.boundaryTimer);
-    this.boundaryTimer = setTimeout(() => void this.loadBoundaries(), 400);
+    this.boundaryTimer = setTimeout(() => { void this.loadBoundaries(); void this.loadPois(); }, 400);
   }
 
   async loadBoundaries() {
@@ -82,6 +84,23 @@ export class TeamMap {
         }
       }
     } catch { /* boundaries are decorative: keep the previous ones and retry on the next pan */ }
+  }
+
+  /** POIs can number in the thousands, so they are drawn as canvas circles in one layer rather than as DOM markers. */
+  async loadPois() {
+    if (!this.map) return;
+    const b = this.map.getBounds();
+    const query = new URLSearchParams({ latBottom: b.getSouth(), latTop: b.getNorth(), lonLeft: b.getWest(), lonRight: b.getEast() });
+    const seq = this.poiSeq = (this.poiSeq ?? 0) + 1;
+    try {
+      const points = await api(`${base}/api/pois?${query}`);
+      if (seq !== this.poiSeq) return; // a newer pan superseded this response
+      const L = window.L;
+      this.poiLayer.clearLayers();
+      for (const point of points) {
+        L.circleMarker(point, { renderer: this.poiRenderer, radius: 3, weight: 1, color: '#ffffff', fillColor: '#d9534f', fillOpacity: 0.85, interactive: false }).addTo(this.poiLayer);
+      }
+    } catch { /* POIs are decorative: keep the previous ones and retry on the next pan */ }
   }
 
   /** Leaflet caches its size; call after the container is shown, resized or made fullscreen. */

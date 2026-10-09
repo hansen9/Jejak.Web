@@ -24,6 +24,7 @@ public class SFDPagesController : Controller
     public IActionResult Index()
     {
         NoStore();
+        if (User.Identity?.IsAuthenticated != true) return LocalRedirect(Url.Content("~/SFD/masuk"));
         ViewData["Title"] = "Leader Dashboard — Pemantauan Tim";
         ViewData["Description"] = "Pantau posisi GPS, kecepatan, arah perjalanan, jarak tempuh anggota, dan cakupan rute tim lapangan dalam satu dashboard.";
         return View("~/Views/SFD/SFDDashboard.cshtml");

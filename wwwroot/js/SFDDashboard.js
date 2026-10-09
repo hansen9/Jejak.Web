@@ -326,9 +326,7 @@ const actions = {
   'go-live': goLiveFromDialog,
   logout: async () => {
     try { await auth.logout(); } catch { /* the cookie may already be gone; fall through to the signed-out UI */ }
-    state.user = null;
-    dialogs.account.close();
-    void load();
+    location.replace(`${base}/masuk`);
   },
 };
 

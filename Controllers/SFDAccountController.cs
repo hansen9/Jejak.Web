@@ -1,21 +1,19 @@
 using System.Security.Claims;
-using System.Text.Json;
-using SFD.Data;
 using SFD.Models;
+using System.Text.Json;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 
 namespace SFD.Controllers;
 
 [ApiController]
-[Route("akun")]
+[Route("SFD/akun")]
 [AllowAnonymous]
-public class SFDAccountController(SFDAppDbContext db, IHttpClientFactory http, IAntiforgery antiforgery, ILogger<SFDAccountController> log) : ControllerBase
+public class SFDAccountController(IHttpClientFactory http, IAntiforgery antiforgery, ILogger<SFDAccountController> log) : ControllerBase
 {
     const string LoginEndpoint = "https://www.solofleet.com/AndroidDevice/logindirect";
 
@@ -30,7 +28,7 @@ public class SFDAccountController(SFDAppDbContext db, IHttpClientFactory http, I
         try
         {
             var url = $"{LoginEndpoint}?username={Uri.EscapeDataString(username)}&password={Uri.EscapeDataString(request.Password)}";
-            using var response = await http.CreateClient().GetAsync(url, HttpContext.RequestAborted);
+            using var response = await http.CreateClient().PostAsync(url, null, HttpContext.RequestAborted);
             if (!response.IsSuccessStatusCode) return Unauthorized();
             using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(HttpContext.RequestAborted), cancellationToken: HttpContext.RequestAborted);
             if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0) return Unauthorized();
@@ -46,25 +44,11 @@ public class SFDAccountController(SFDAppDbContext db, IHttpClientFactory http, I
 
         var remoteId = Text(account, "UserId") ?? username;
         var name = Text(account, "actualname") ?? Text(account, "UserName") ?? username;
-        // Dashboard data is owned by a local row, so each SoloFleet user is mapped to one.
-        var key = remoteId.ToLowerInvariant();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == key);
-        if (user is null)
-        {
-            user = new SFDAppUser { Email = key, Name = name };
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
-        }
-        else if (user.Name != name)
-        {
-            user.Name = name;
-            await db.SaveChangesAsync();
-        }
-
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Name),
+            // The SoloFleet UserId owns the leader's members, GPS points and routes.
+            new Claim(ClaimTypes.NameIdentifier, remoteId),
+            new Claim(ClaimTypes.Name, name),
             new Claim(ClaimTypes.Email, Text(account, "UserName") ?? username),
         ], CookieAuthenticationDefaults.AuthenticationScheme));
 

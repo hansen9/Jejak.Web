@@ -1,4 +1,4 @@
-import { ApiError, api, auth, boot, direction, esc, icon, initialsOf, num, safeColor, todayWib } from './SFDCommon.js';
+import { ApiError, api, auth, base, boot, direction, esc, icon, initialsOf, num, safeColor, todayWib } from './SFDCommon.js';
 import { TeamMap } from './SFDMap.js';
 
 const HEADINGS = {
@@ -13,9 +13,9 @@ const STATUS_LABEL = { bergerak: 'Bergerak', berhenti: 'Berhenti', offline: 'Off
 const POLL_MS = 15000;
 
 const state = {
-  view: 'dashboard', date: boot.today, demo: true,
+  view: 'dashboard', date: boot.today,
   globalQuery: '', teamQuery: '', status: 'all', selected: null,
-  showTraces: true, showRemaining: true, dismissDemo: false, sortByDistance: false,
+  showTraces: true, showRemaining: true, sortByDistance: false,
   user: boot.user, loading: false, error: '', connected: false, updatedAt: '', members: [], routes: [],
 };
 
@@ -46,16 +46,16 @@ let loadSeq = 0;
 
 async function load({ silent = false } = {}) {
   const seq = ++loadSeq;
-  if (!state.demo && !state.user) {
+  if (!state.user) {
     Object.assign(state, { members: [], routes: [], error: '', connected: false, loading: false });
     render();
     return;
   }
   if (!silent) { state.loading = true; render(); }
   try {
-    const data = await api(`/api/tracking?date=${encodeURIComponent(state.date)}&demo=${state.demo}`);
+    const data = await api(`${base}/api/tracking?date=${encodeURIComponent(state.date)}`);
     if (seq !== loadSeq) return;
-    Object.assign(state, { members: data.members, routes: data.routes, updatedAt: data.updatedAt, error: '', connected: !state.demo });
+    Object.assign(state, { members: data.members, routes: data.routes, updatedAt: data.updatedAt, error: '', connected: true });
   } catch (err) {
     if (seq !== loadSeq) return;
     if (err instanceof ApiError && err.status === 401) state.user = null;
@@ -67,18 +67,12 @@ async function load({ silent = false } = {}) {
 }
 
 // The original dashboard held a PocketBase realtime subscription; here the page re-reads on a timer while it is visible.
-setInterval(() => { if (!state.demo && state.user && !document.hidden) void load({ silent: true }); }, POLL_MS);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !state.demo && state.user) void load({ silent: true }); });
+setInterval(() => { if (state.user && !document.hidden) void load({ silent: true }); }, POLL_MS);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.user) void load({ silent: true }); });
 
 function useLive() {
-  Object.assign(state, { demo: false, date: todayWib(), selected: null, dismissDemo: false });
+  Object.assign(state, { date: todayWib(), selected: null });
   map.resetAutoFit();
-  $('#date-input').value = state.date;
-  void load();
-}
-
-function useDemo() {
-  Object.assign(state, { demo: true, date: todayWib(), selected: null });
   $('#date-input').value = state.date;
   void load();
 }
@@ -105,40 +99,38 @@ function render() {
   $('#map-panel').classList.toggle('expanded', v === 'map');
   show($('#routes-panel'), v === 'routes' || v === 'analytics');
   show($('#reports-panel'), v === 'reports');
-  if (mapVisible) { map.update({ members: mapMembers, routes, selected: state.selected, showTraces: state.showTraces, showRemaining: state.showRemaining, demo: state.demo }); map.refreshSize(); }
+  if (mapVisible) { map.update({ members: mapMembers, routes, selected: state.selected, showTraces: state.showTraces, showRemaining: state.showRemaining }); map.refreshSize(); }
 }
 
 function renderChrome() {
-  const { demo, user, view } = state;
+  const { user, view } = state;
   const name = String(user?.name || 'Leader');
   const [title, sub] = HEADINGS[view];
   $('#page-title').textContent = title;
   $('#page-sub').textContent = sub;
-  show($('#demo-tag'), demo);
   $('#btn-refresh').disabled = state.loading;
   $('#btn-refresh').classList.toggle('spinning', state.loading);
   $('#crumb').textContent = $(`[data-nav="${view}"]`).dataset.label;
   $$('[data-nav]').forEach(btn => btn.classList.toggle('active', btn.dataset.nav === view));
 
-  $('#side-avatar').textContent = demo ? 'RL' : name.slice(0, 2).toUpperCase();
-  $('#top-avatar').textContent = demo ? 'RL' : name.slice(0, 2).toUpperCase();
-  $('#side-name').textContent = demo ? 'Ruang Leader' : name;
-  $('#side-sub').textContent = demo ? 'Pratinjau dashboard' : 'Leader tim';
-  $('#conn-dot').className = `status-dot ${demo ? 'copper' : state.connected ? '' : 'gray'}`;
-  $('#conn-title').textContent = demo ? 'Mode demonstrasi' : state.connected ? 'GPS terhubung' : 'Menunggu koneksi GPS';
-  $('#conn-sub').textContent = demo ? 'Jelajahi dengan data contoh' : 'Data tersimpan secara privat';
+  $('#side-avatar').textContent = user ? name.slice(0, 2).toUpperCase() : 'RL';
+  $('#top-avatar').textContent = user ? name.slice(0, 2).toUpperCase() : 'RL';
+  $('#side-name').textContent = user ? name : 'Ruang Leader';
+  $('#side-sub').textContent = user ? 'Leader tim' : 'Belum masuk';
+  $('#conn-dot').className = `status-dot ${state.connected ? '' : 'gray'}`;
+  $('#conn-title').textContent = state.connected ? 'GPS terhubung' : 'Menunggu koneksi GPS';
+  $('#conn-sub').textContent = 'Data tersimpan secara privat';
 
-  $('#live-badge-text').textContent = demo ? 'SIMULASI' : 'LANGSUNG';
+  $('#live-badge-text').textContent = 'LANGSUNG';
   $('#updated-at').textContent = state.updatedAt || '—';
   $('#map-panel .map-panel-actions button').setAttribute('aria-label', view === 'map' ? 'Tutup tampilan peta' : 'Buka tampilan peta');
-  show($('#demo-banner'), demo && !state.dismissDemo);
-  $('#footer-status').textContent = demo ? 'Data demonstrasi · bukan GPS langsung' : state.connected ? 'Pembaruan GPS langsung' : 'Menunggu pembaruan GPS';
+  $('#footer-status').textContent = state.connected ? 'Pembaruan GPS langsung' : 'Menunggu pembaruan GPS';
 }
 
 function renderBanners() {
   const parts = [];
   if (state.error) parts.push(`<div class="error-banner" role="alert">${esc(state.error)}<button data-action="retry">Coba lagi</button></div>`);
-  if (!state.demo && !state.user) parts.push('<div class="error-banner">Masuk untuk melihat data tim Anda.<button data-dialog="account">Masuk sebagai leader</button></div>');
+  if (!state.user) parts.push('<div class="error-banner">Masuk untuk melihat data tim Anda.<button data-dialog="account">Masuk sebagai leader</button></div>');
   $('#banners').innerHTML = parts.join('');
 }
 
@@ -187,20 +179,19 @@ function renderMembers(members) {
 function renderRoutes(members, routes) {
   $('#route-rows').innerHTML = routes.map(r => `<tr><td><div class="route-name">${icon('map-pin', 18)}<div><strong>${esc(r.area || r.name)}</strong><small>${esc(r.name)}</small></div></div></td><td>${num(r.total)} km</td><td>${num(r.done)} km</td><td class="text-copper">${num(r.remaining)} km</td><td><div class="route-progress"><div><span style="width:${r.percent}%"></span></div><strong>${num(r.percent, 0)}%</strong></div></td><td><button class="icon-button" data-nav-to="map" aria-label="Lihat rute ${esc(r.name)} di peta">${icon('arrow-up-right', 16)}</button></td></tr>`).join('');
   show($('#route-empty'), !routes.length);
-  $('#route-demo-note').textContent = state.demo ? 'Pada mode demo, cakupan merupakan ilustrasi.' : '';
 }
 
 function renderReport(members, routes) {
   const cov = coverage(routes);
   $('#report-facts').innerHTML = `<span><strong>${members.length}</strong> anggota</span><span><strong>${num(members.reduce((sum, m) => sum + m.distance, 0))}</strong> km tempuh</span><span><strong>${num(cov.percent, 0)}%</strong> cakupan</span>`;
   $('#report-download-label').textContent = `Unduh CSV · ${state.date}`;
-  $('#report-disclaimer').textContent = state.demo ? 'Laporan ini menggunakan data demonstrasi, bukan perjalanan sebenarnya.' : 'Berkas berisi lokasi tim. Bagikan hanya kepada pihak yang berwenang.';
+  $('#report-disclaimer').textContent = 'Berkas berisi lokasi tim. Bagikan hanya kepada pihak yang berwenang.';
 }
 
 // ---------------------------------------------------------------- dialogs
 
 const dialogs = { account: $('#dlg-account'), member: $('#dlg-member'), import: $('#dlg-import'), help: $('#dlg-help'), notifications: $('#dlg-notifications') };
-const live = () => !state.demo && !!state.user;
+const live = () => !!state.user;
 
 function openDialog(name) {
   for (const dialog of Object.values(dialogs)) if (dialog.open) dialog.close();
@@ -228,20 +219,20 @@ for (const dialog of Object.values(dialogs)) {
 function renderAccount() {
   const body = $('#account-body');
   // Rebuilt only when what it shows changes, so a background refresh never wipes a half-typed login form.
-  const signature = `${!!state.user}|${state.demo}`;
+  const signature = `${!!state.user}`;
   if (body.dataset.rendered === signature) return;
   body.dataset.rendered = signature;
   const user = state.user;
-  const bottom = `<div class="dialog-bottom">${state.demo ? 'Anda sedang menggunakan data demonstrasi.' : 'Data tim hanya dapat diakses oleh akun pemilik.'}${!state.demo ? '<button class="button-text" data-action="demo">Kembali ke demo</button>' : ''}</div>`;
+  const bottom = `<div class="dialog-bottom">Data tim hanya dapat diakses oleh akun pemilik.</div>`;
   body.innerHTML = `<div class="dialog-symbol">${icon('lock-keyhole', 23)}</div><h2 id="account-title">${user ? 'Ruang kerja Anda' : 'Masuk sebagai leader'}</h2><p>${user ? 'Kelola tim dengan data privat yang tersimpan di ruang kerja Anda.' : 'Gunakan akun leader untuk menghubungkan GPS dan mengelola data tim yang sebenarnya.'}</p>`
     + (user
-      ? `<div class="account-summary"><span class="profile-avatar">${esc(initialsOf(user))}</span><div><strong>${esc(user.name || 'Leader')}</strong><small>${esc(user.email)}</small></div>${icon('check', 18)}</div><button class="button-primary wide" data-action="go-live">${icon('radio', 17)}Gunakan data tim asli</button><a class="button-secondary wide" href="/perangkat">${icon('smartphone', 17)}Hubungkan GPS perangkat</a><button class="button-text" data-action="logout">${icon('log-out', 15)}Keluar dari akun</button>`
+      ? `<div class="account-summary"><span class="profile-avatar">${esc(initialsOf(user))}</span><div><strong>${esc(user.name || 'Leader')}</strong><small>${esc(user.email)}</small></div>${icon('check', 18)}</div><button class="button-primary wide" data-action="go-live">${icon('radio', 17)}Muat data tim</button><a class="button-secondary wide" href="/perangkat">${icon('smartphone', 17)}Hubungkan GPS perangkat</a><button class="button-text" data-action="logout">${icon('log-out', 15)}Keluar dari akun</button>`
       : `<form class="app-form" id="login-form"><label>Username leader<input name="username" type="text" required placeholder="Username SoloFleet" autocomplete="username"></label><label>Kata sandi<input name="password" type="password" required placeholder="Masukkan kata sandi" autocomplete="current-password"></label><p class="form-error" id="login-error" role="alert" hidden></p><button class="button-primary wide" id="login-submit" type="submit">Masuk ke ruang kerja</button><div class="info-box">${icon('lock-keyhole', 17)}<p>Masuk dengan akun SoloFleet Anda. Hanya leader DMO yang dapat mengakses dashboard ini.</p></div></form>`)
     + bottom;
 }
 
 function renderNotifications() {
-  $('#notif-sub').textContent = state.demo ? 'Notifikasi berikut berasal dari data demonstrasi.' : 'Kondisi anggota berdasarkan pembaruan GPS terakhir.';
+  $('#notif-sub').textContent = 'Kondisi anggota berdasarkan pembaruan GPS terakhir.';
   const alerts = state.members.filter(m => m.status !== 'bergerak');
   $('#notif-list').innerHTML = alerts.length
     ? alerts.map(m => `<button data-show="${esc(m.id)}"><span class="alert-icon ${esc(m.status)}">${icon(m.status === 'offline' ? 'wifi-off' : 'circle-pause', 20)}</span><div><strong>${esc(m.name)} ${m.status === 'offline' ? 'tidak terhubung' : 'sedang berhenti'}</strong><p>${m.status === 'offline' ? 'Belum menerima GPS baru selama lebih dari 5 menit.' : 'Kecepatan terakhir kurang dari 1 km/jam.'}</p><small>${esc(m.area)} · ${esc(m.lastSeen)}</small></div></button>`).join('')
@@ -276,7 +267,7 @@ function exportCsv() {
   const { members, routes } = derived();
   if (!members.length) { toast('Belum ada data anggota untuk diunduh.'); return; }
   const rows = [
-    ['LAPORAN SFD', state.date, state.demo ? 'DATA DEMONSTRASI — BUKAN GPS LANGSUNG' : 'DATA TIM PRIVAT'],
+    ['LAPORAN SFD', state.date, 'DATA TIM PRIVAT'],
     [],
     ['PERJALANAN ANGGOTA'],
     ['Nama', 'Wilayah', 'Status', 'Jarak (km)', 'Kecepatan (km/jam)', 'Arah', 'Latitude', 'Longitude', 'Terakhir diperbarui'],
@@ -333,12 +324,11 @@ const actions = {
   retry: () => void load(),
   'close-nav': closeNav,
   'go-live': goLiveFromDialog,
-  demo: () => { dialogs.account.close(); useDemo(); },
   logout: async () => {
     try { await auth.logout(); } catch { /* the cookie may already be gone; fall through to the signed-out UI */ }
     state.user = null;
     dialogs.account.close();
-    useDemo();
+    void load();
   },
 };
 
@@ -369,7 +359,7 @@ document.addEventListener('submit', async event => {
     } catch (e) {
       if (e?.status === 403) {
         alert('Pengguna ini bukan leader. Hanya leader DMO yang dapat masuk ke Leader Dashboard.');
-        location.replace('/');
+        location.replace(base);
         return;
       }
       error.textContent = e?.status === 502 ? 'Layanan SoloFleet tidak dapat dihubungi. Coba lagi nanti.' : 'Username atau kata sandi tidak sesuai.'; show(error, true);
@@ -379,7 +369,7 @@ document.addEventListener('submit', async event => {
     const error = $('#member-error'); const submit = $('#member-submit');
     show(error, false); submit.disabled = true; submit.textContent = 'Menyimpan…';
     try {
-      await api('/api/members', { method: 'POST', json: { name: form.name.value, area: form.area.value, phone: form.phone.value, color: $('#color-picker .selected').dataset.color } });
+      await api(`${base}/api/members`, { method: 'POST', json: { name: form.name.value, area: form.area.value, phone: form.phone.value, color: $('#color-picker .selected').dataset.color } });
       form.reset();
       dialogs.member.close();
       toast('Anggota berhasil ditambahkan.');
@@ -399,7 +389,7 @@ async function submitImport(form) {
     const data = new FormData();
     data.append('file', form.file.files[0]);
     if (gps) data.append('member', form.member.value);
-    const result = await api(gps ? '/api/import/gps' : '/api/import/routes', { method: 'POST', form: data });
+    const result = await api(gps ? `${base}/api/import/gps` : `${base}/api/import/routes`, { method: 'POST', form: data });
     success.textContent = `${result.imported} ${gps ? 'titik GPS' : 'rute'} berhasil diimpor.`; show(success, true);
     form.file.value = '';
     void load();
@@ -428,8 +418,7 @@ $('#sort-distance').addEventListener('click', () => { state.sortByDistance = !st
 $('#btn-expand').addEventListener('click', () => setView(state.view === 'map' ? 'dashboard' : 'map'));
 $('#btn-export').addEventListener('click', exportCsv);
 $('#btn-export-report').addEventListener('click', exportCsv);
-$('#btn-refresh').addEventListener('click', () => { if (state.demo) toast(`Data demonstrasi diperbarui · ${state.updatedAt}`); else void load(); });
-$('#dismiss-demo').addEventListener('click', () => { state.dismissDemo = true; render(); });
+$('#btn-refresh').addEventListener('click', () => { void load(); });
 $('#toast-close').addEventListener('click', () => show($('#toast'), false));
 $('#nav-open').addEventListener('click', openNav);
 const navToggle = $('#nav-close');

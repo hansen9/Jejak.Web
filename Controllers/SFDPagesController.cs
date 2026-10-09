@@ -20,7 +20,7 @@ public class SFDPagesController : Controller
     // Pages embed the signed-in user and a CSRF token, so shared caches must never keep them.
     void NoStore() => Response.Headers.CacheControl = "private, no-store";
 
-    [HttpGet("/")]
+    [HttpGet("/SFD")]
     public IActionResult Index()
     {
         NoStore();
@@ -29,12 +29,12 @@ public class SFDPagesController : Controller
         return View("~/Views/SFD/SFDDashboard.cshtml");
     }
 
-    [HttpGet("/masuk")]
+    [HttpGet("/SFD/masuk")]
     public IActionResult Login(string? returnUrl)
     {
         NoStore();
         // Only local paths are honoured, so the login page cannot be used as an open redirect.
-        var target = Url.IsLocalUrl(returnUrl) ? returnUrl! : "/";
+        var target = Url.IsLocalUrl(returnUrl) ? returnUrl! : Url.Content("~/SFD");
         if (User.Identity?.IsAuthenticated == true) return LocalRedirect(target);
         ViewData["Title"] = "Masuk — Leader Dashboard";
         ViewData["Description"] = "Masuk sebagai leader untuk mengelola data tim lapangan Anda di Leader Dashboard.";
@@ -43,7 +43,7 @@ public class SFDPagesController : Controller
         return View("~/Views/SFD/SFDLogin.cshtml");
     }
 
-    [HttpGet("/perangkat")]
+    [HttpGet("/SFD/perangkat")]
     public IActionResult Device()
     {
         NoStore();
@@ -52,8 +52,8 @@ public class SFDPagesController : Controller
         return View("~/Views/SFD/SFDDevice.cshtml");
     }
 
-    [HttpGet("/error/{code:int?}")]
-    [HttpPost("/error/{code:int?}")]
+    [HttpGet("/SFD/error/{code:int?}")]
+    [HttpPost("/SFD/error/{code:int?}")]
     [IgnoreAntiforgeryToken]
     public IActionResult Error(int? code)
     {
@@ -66,36 +66,5 @@ public class SFDPagesController : Controller
         ViewBag.RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         Response.StatusCode = status;
         return View("~/Views/SFD/SFDError.cshtml");
-    }
-
-    [HttpGet("/robots.txt")]
-    public IActionResult Robots()
-    {
-        var origin = SFDSiteOrigin.From(Request);
-        var host = Request.Host.Host;
-        string[] unpublished = [".app-preview.com", ".app-preview.io", ".hostingersite.com", ".hostingersite.dev"];
-        const string signal = "Content-Signal: search=yes, ai-input=yes, ai-train=no";
-        string[] answerAgents = ["OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User", "PerplexityBot", "Perplexity-User", "DuckAssistBot", "MistralAI-User", "meta-webindexer", "meta-externalfetcher", "Amzn-SearchBot", "Amzn-User"];
-        string[] trainingAgents = ["GPTBot", "ClaudeBot", "Google-Extended", "Applebot-Extended", "meta-externalagent", "Amazonbot", "Bytespider"];
-
-        var lines = unpublished.Any(host.EndsWith)
-            ? ["User-agent: *", "Disallow: /"]
-            : new[] { "User-agent: *", signal, "Allow: /", "" }
-                .Concat(answerAgents.SelectMany(a => new[] { $"User-agent: {a}", signal, "Allow: /", "" }))
-                .Concat(trainingAgents.SelectMany(a => new[] { $"User-agent: {a}", "Disallow: /", "" }))
-                .Append($"Sitemap: {origin}/sitemap.xml").ToArray();
-
-        Response.Headers.CacheControl = "public, max-age=3600";
-        return Content(string.Join('\n', lines) + "\n", "text/plain", Encoding.UTF8);
-    }
-
-    [HttpGet("/sitemap.xml")]
-    public IActionResult Sitemap()
-    {
-        var origin = SFDSiteOrigin.From(Request);
-        var urls = string.Concat(new[] { "/", "/perangkat" }.Select(p => $"\t<url>\n\t\t<loc>{System.Net.WebUtility.HtmlEncode(origin + p)}</loc>\n\t</url>\n"));
-        Response.Headers.CacheControl = "public, max-age=3600";
-        Response.Headers.AccessControlAllowOrigin = "*";
-        return Content($"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n{urls}</urlset>\n", "application/xml", Encoding.UTF8);
     }
 }

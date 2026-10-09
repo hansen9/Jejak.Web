@@ -36,8 +36,7 @@ public static class SFDGeo
 
     public readonly record struct Segment(SFDLatLon A, SFDLatLon B, bool Covered, double Distance);
 
-    /// <param name="demoCovered">When set, coverage is illustrative: the first fraction of the route counts as covered.</param>
-    public static List<Segment> RouteSegments(IReadOnlyList<SFDLatLon> route, IReadOnlyList<(SFDLatLon From, SFDLatLon To)> traces, bool demo, double demoCovered)
+    public static List<Segment> RouteSegments(IReadOnlyList<SFDLatLon> route, IReadOnlyList<(SFDLatLon From, SFDLatLon To)> traces)
     {
         var result = new List<Segment>();
         for (var index = 1; index < route.Count; index++)
@@ -49,9 +48,7 @@ public static class SFDGeo
                 var a = Lerp(start, end, (double)step / count);
                 var b = Lerp(start, end, (double)(step + 1) / count);
                 var mid = new SFDLatLon((a.Lat + b.Lat) / 2, (a.Lon + b.Lon) / 2);
-                var covered = demo
-                    ? (index - 1 + (double)step / count) / (route.Count - 1) < demoCovered
-                    : traces.Any(t => DistanceToSegment(mid, t.From, t.To) <= CoverageRadiusKm);
+                var covered = traces.Any(t => DistanceToSegment(mid, t.From, t.To) <= CoverageRadiusKm);
                 result.Add(new Segment(a, b, covered, Haversine(a, b)));
             }
         }

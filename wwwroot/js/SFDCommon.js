@@ -1,6 +1,8 @@
 // Helpers shared by the dashboard and the device sender page.
 
 export const boot = window.SFD;
+/** URL prefix of this module ("/SFD"), injected by _SFDLayout. */
+export const base = boot.basePath;
 
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -45,8 +47,8 @@ function applySession(session) {
 }
 
 export const auth = {
-  login: async (username, password) => applySession(await api('/akun/masuk', { method: 'POST', json: { username, password } })),
-  logout: async () => applySession(await api('/akun/keluar', { method: 'POST' })),
+  login: async (username, password) => applySession(await api(`${base}/akun/masuk`, { method: 'POST', json: { username, password } })),
+  logout: async () => applySession(await api(`${base}/akun/keluar`, { method: 'POST' })),
 };
 
 export const initialsOf = user => (user?.name || user?.email || 'L').slice(0, 2).toUpperCase();

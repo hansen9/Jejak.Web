@@ -37,7 +37,7 @@ public record SFDRouteDto(
     double Total, double Done, double Remaining, double Percent,
     List<SFDLatLon[]> Uncovered);
 
-public record SFDTrackingDto(bool Demo, string Date, string UpdatedAt, List<SFDMemberDto> Members, List<SFDRouteDto> Routes);
+public record SFDTrackingDto(string Date, string UpdatedAt, List<SFDMemberDto> Members, List<SFDRouteDto> Routes);
 
 public record SFDLoginRequest(string? Username, string? Password);
 public record SFDMemberRequest(string? Name, string? Area, string? Phone, string? Color);

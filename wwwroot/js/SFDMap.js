@@ -13,7 +13,7 @@ export class TeamMap {
     this.onSelect = onSelect;
     this.detail = false;
     this.autoFitted = false;
-    this.last = { members: [], routes: [], selected: null, showTraces: true, showRemaining: true, demo: true };
+    this.last = { members: [], routes: [], selected: null, showTraces: true, showRemaining: true };
     const $ = selector => root.querySelector(selector);
     this.els = { slot: $('#map-slot'), loading: $('#map-loading'), error: $('#map-error'), empty: $('#map-empty'), style: $('#map-style'), full: $('#map-full'), place: $('#map-place'), region: $('#map-region') };
 
@@ -66,9 +66,9 @@ export class TeamMap {
 
   update(state) {
     this.last = state;
-    const { members, routes, selected, showTraces, showRemaining, demo } = state;
-    this.els.place.textContent = demo ? 'Jakarta Selatan' : 'Lokasi tim';
-    this.els.region.textContent = demo ? 'DKI Jakarta' : 'GPS perangkat';
+    const { members, routes, selected, showTraces, showRemaining } = state;
+    this.els.place.textContent = 'Lokasi tim';
+    this.els.region.textContent = 'GPS perangkat';
     if (!this.ensure()) return;
     this.els.empty.hidden = members.length > 0;
 
@@ -106,7 +106,7 @@ export class TeamMap {
       marker.on('click', () => this.onSelect(member.id));
     }
 
-    if (!demo && !this.autoFitted) {
+    if (!this.autoFitted) {
       const positions = members.filter(m => m.trace.length).map(m => m.position);
       if (positions.length) { this.map.fitBounds(L.latLngBounds(positions).pad(0.25), { maxZoom: 14 }); this.autoFitted = true; }
     }

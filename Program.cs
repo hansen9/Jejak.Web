@@ -1,21 +1,21 @@
 using System.Threading.RateLimiting;
-using SFD.Data;
-using SFD.Models;
+using InternalWebApp.Helper;
+using SFD.Repositories;
 using SFD.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
-builder.Services.AddDbContext<SFDAppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=sfd.db"));
-
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<DBHelper>();
+builder.Services.AddScoped<ISFDMemberRepository, SFDMemberRepository>();
+builder.Services.AddScoped<ISFDGpsPointRepository, SFDGpsPointRepository>();
+builder.Services.AddScoped<ISFDRouteRepository, SFDRouteRepository>();
 builder.Services.AddScoped<SFDTrackingService>();
 builder.Services.AddSingleton<SFDIconSet>();
 
@@ -48,16 +48,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<SFDAppDbContext>();
-    db.Database.EnsureCreated();
-}
-
 app.UseForwardedHeaders();
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/error");
+    app.UseExceptionHandler("/SFD/error");
     app.UseHsts();
 }
 
@@ -68,21 +62,21 @@ app.Use(async (context, next) =>
     headers["X-Frame-Options"] = "DENY";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     // The dashboard shows live location data; never let a shared cache keep it.
-    if (context.Request.Path.StartsWithSegments("/api")) headers["Cache-Control"] = "no-store";
+    if (context.Request.Path.StartsWithSegments("/SFD/api")) headers["Cache-Control"] = "no-store";
     await next();
 });
 
 // Friendly pages for browser navigation only; fetch() callers just read the status code.
 app.UseWhen(
-    context => HttpMethods.IsGet(context.Request.Method) && !context.Request.Path.StartsWithSegments("/api"),
-    branch => branch.UseStatusCodePagesWithReExecute("/error/{0}"));
+    context => HttpMethods.IsGet(context.Request.Method) && context.Request.Path.StartsWithSegments("/SFD") && !context.Request.Path.StartsWithSegments("/SFD/api"),
+    branch => branch.UseStatusCodePagesWithReExecute("/SFD/error/{0}"));
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/api/health", () => Results.Ok(new { ok = true })).DisableAntiforgery();
+app.MapGet("/SFD/api/health", () => Results.Ok(new { ok = true })).DisableAntiforgery();
 app.MapControllers();
 
 app.Run();

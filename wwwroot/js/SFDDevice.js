@@ -1,4 +1,4 @@
-import { ApiError, api, auth, boot, esc, icon, num } from './SFDCommon.js';
+import { ApiError, api, auth, base, boot, esc, icon, num } from './SFDCommon.js';
 
 // Sends this device's GPS position to the signed-in leader's workspace, at most once every 10 seconds.
 const SEND_INTERVAL_MS = 10000;
@@ -23,7 +23,7 @@ function render() {
   const options = state.members.map(m => `<option value="${esc(m.id)}" ${m.id === state.member ? 'selected' : ''}>${esc(m.name)} · ${esc(m.area)}</option>`).join('');
   card.innerHTML = `<div class="dialog-symbol">${icon('smartphone', 25)}</div><div class="device-card-title"><h2>Pengirim lokasi</h2><span class="status-pill ${state.running ? 'bergerak' : 'offline'}"><i></i>${state.running ? 'Aktif' : 'Tidak aktif'}</span></div><p class="device-description">${esc(state.user.email)}</p>
     <label class="device-member-label">Anggota untuk perangkat ini<select id="member-select" ${state.running || state.loading ? 'disabled' : ''}><option value="">${state.loading ? 'Memuat anggota…' : 'Pilih anggota'}</option>${options}</select></label>
-    ${!state.loading && !state.members.length ? '<div class="info-box"><p>Belum ada anggota. <a href="/">Tambahkan anggota di dashboard</a> terlebih dahulu.</p></div>' : ''}
+    ${!state.loading && !state.members.length ? '<div class="info-box"><p>Belum ada anggota. <a href="${base}">Tambahkan anggota di dashboard</a> terlebih dahulu.</p></div>' : ''}
     ${last ? `<div class="gps-readings"><div>${icon('map-pin', 17)}<small>Koordinat terakhir</small><strong>${num(last.lat, 5)}, ${num(last.lon, 5)}</strong></div><div>${icon('navigation', 17)}<small>Kecepatan</small><strong>${num(last.speed)} km/jam</strong></div><div>${icon('locate-fixed', 17)}<small>Akurasi lokasi</small><strong>± ${num(last.accuracy, 0)} m</strong></div><div>${icon('check', 17)}<small>Data terkirim</small><strong>${state.count} titik · ${esc(last.time)} WIB</strong></div></div>` : ''}
     ${state.running && !last ? `<div class="gps-wait">${icon('locate-fixed', 24, 2, 'spin')}<p>Menunggu lokasi GPS pertama…</p></div>` : ''}
     ${state.error ? `<p class="form-error" role="alert">${esc(state.error)}</p>` : ''}
@@ -34,7 +34,7 @@ function render() {
 
 async function loadMembers() {
   state.loading = true; render();
-  try { state.members = await api('/api/members'); state.error = ''; }
+  try { state.members = await api(`${base}/api/members`); state.error = ''; }
   catch { state.error = 'Anggota belum dapat dimuat. Kembali ke dashboard dan tambahkan anggota.'; }
   finally { state.loading = false; render(); }
 }
@@ -57,7 +57,7 @@ function start() {
     sending = true;
     try {
       const point = { memberId: state.member, latitude: c.latitude, longitude: c.longitude, speed: Math.max(0, (c.speed || 0) * 3.6), bearing: c.heading || 0, accuracy: c.accuracy, recordedAt: new Date(position.timestamp).toISOString() };
-      await api('/api/gps', { method: 'POST', json: point });
+      await api(`${base}/api/gps`, { method: 'POST', json: point });
       if (!started) return;
       lastSent = Date.now(); state.count += 1; state.error = '';
       state.last = { lat: point.latitude, lon: point.longitude, speed: point.speed, accuracy: point.accuracy, time: timeWib(position.timestamp) };

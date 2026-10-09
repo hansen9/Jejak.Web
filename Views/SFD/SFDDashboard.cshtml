@@ -8,7 +8,6 @@
     .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 25px; }
     .page-heading h1 { font-size: 29px; line-height: 1.25; font-weight: 750; letter-spacing: -1.05px; color: #382c41; }
     .page-heading p { font-size: 11.5px; line-height: 1.8; color: var(--subtle); margin-top: 7px; }
-    .demo-tag { display: inline-block; background: var(--copper-light); border-radius: 3px; color: #a17d62; font-size: 9px; padding: 0 5px; line-height: 18px; margin-left: 5px; vertical-align: 1px; }
     .heading-actions { display: flex; align-items: center; gap: 10px; padding-top: 17px; flex-shrink: 0; }
     .refresh-button { margin-right: 1px; }
     .date-filter { display: flex; align-items: center; gap: 9px; border: 1px solid #e5e0ea; background: var(--paper); border-radius: 7px; min-height: 37px; padding: 8px 11px; color: #756880; font-size: 10px; }
@@ -201,14 +200,6 @@
     .report-facts strong { font-size: 16px; color: #705079; margin-right: 3px; }
     .report-buttons { display: flex; align-items: center; gap: 10px; }
     .report-disclaimer { display: flex; align-items: center; gap: 6px; font-size: 8px !important; margin-top: 20px; }
-    .demo-banner { display: flex; align-items: center; gap: 12px; padding: 15px 19px; background: #ede8f1; border-radius: 8px; margin: 0 0 23px; }
-    .demo-banner-icon { display: flex; align-items: center; justify-content: center; color: #9d80ad; border-radius: 7px; width: 34px; height: 34px; background: #f6f2f8; }
-    .demo-banner>div { flex: 1; }
-    .demo-banner strong { font-size: 10px; color: #80648f; font-weight: 650; }
-    .demo-banner p { font-size: 8.5px; color: #a28aad; margin-top: 4px; }
-    .demo-banner>button:not(.icon-button) { border: none; border-radius: 5px; display: flex; align-items: center; gap: 5px; padding: 8px 11px; color: #8a6a9b; background: #fcfafd; font-size: 8px; font-weight: 650; }
-    .demo-banner>button:not(.icon-button):hover { background: white; }
-    .demo-banner>.icon-button { margin-left: -3px; color: #a994b4; }
     .dashboard-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 22px; color: #b4a6bf; font-size: 8px; }
     .dashboard-footer>div { display: flex; align-items: center; gap: 5px; }
     .dashboard-footer>div>i { width: 2px; height: 2px; background: #c6b7d0; border-radius: 50%; margin: 0 5px; }
@@ -253,8 +244,6 @@
     .table-unit { font-size: 8px; color: #9b80a8; }
     .table-direction { font-size: 9px; color: #9273a0; }
     .table-footer-button { font-size: 9px; color: #89679a; }
-    .demo-banner strong { color: #745482; font-size: 11px; }
-    .demo-banner p { color: #92729f; font-size: 9px; }
     .dashboard-footer { color: #9985a4; font-size: 8px; }
     .report-content>p { color: #92739f; }
     .route-note { color: #9477a1; }
@@ -437,12 +426,6 @@
       .routes-panel .panel-heading p { font-size: 8px; }
       .routes-table { min-width: 700px; }
       .route-note { font-size: 9px; padding: 15px; }
-      .demo-banner { padding: 14px; gap: 10px; flex-wrap: wrap; }
-      .demo-banner>div { min-width: calc(100% - 50px); }
-      .demo-banner p { font-size: 9px; }
-      .demo-banner>button:not(.icon-button) { margin-left: 44px; font-size: 9px; min-height: 35px; }
-      .demo-banner>.icon-button { margin-left: auto; }
-      .demo-banner strong { font-size: 11px; }
       .dashboard-footer { gap: 10px; font-size: 7px; padding-bottom: 22px; }
       .dashboard-footer>div { flex-wrap: wrap; }
       .dashboard-footer>div>i { margin: 0 2px; }
@@ -472,7 +455,7 @@
                 <div>
                     <div class="eyebrow"><span></span> PANTAU. PAHAMI. ARAHKAN.</div>
                     <h1 id="page-title">Ringkasan hari ini</h1>
-                    <p><span id="page-sub"></span> <span class="demo-tag" id="demo-tag">Data demo</span></p>
+                    <p><span id="page-sub"></span></p>
                 </div>
                 <div class="heading-actions">
                     <button class="icon-button refresh-button" id="btn-refresh" aria-label="Perbarui data">@Html.Icon("refresh-cw", 17)</button>
@@ -490,7 +473,7 @@
 
             <section class="map-panel panel" id="map-panel">
                 <div class="panel-heading map-panel-heading">
-                    <div class="map-title"><h2>Pantauan tim</h2><span class="live-badge">@Html.Icon("radio", 12)<span id="live-badge-text">SIMULASI</span></span></div>
+                    <div class="map-title"><h2>Pantauan tim</h2><span class="live-badge">@Html.Icon("radio", 12)<span id="live-badge-text">LANGSUNG</span></span></div>
                     <div class="map-panel-actions">
                         <span class="last-update">Diperbarui <span id="updated-at">—</span></span>
                         <button class="icon-button" id="btn-expand" aria-label="Buka tampilan peta">@Html.Icon("expand", 16)</button>
@@ -599,15 +582,8 @@
                         <button class="button-secondary" data-dialog="import">@Html.Icon("plus", 15)Impor rute</button>
                     </div>
                 </div>
-                <div class="route-note">Cakupan dihitung dari segmen rute dalam radius 50 meter dari jejak GPS. <span id="route-demo-note"></span></div>
+                <div class="route-note">Cakupan dihitung dari segmen rute dalam radius 50 meter dari jejak GPS.</div>
             </section>
-
-            <div class="demo-banner" id="demo-banner">
-                <span class="demo-banner-icon">@Html.Icon("file-up", 19)</span>
-                <div><strong>Siap melihat perjalanan tim Anda?</strong><p>Hubungkan GPS dan gunakan data lapangan yang sebenarnya.</p></div>
-                <button data-dialog="account">Hubungkan tim @Html.Icon("chevron-right", 16)</button>
-                <button class="icon-button" id="dismiss-demo" aria-label="Tutup informasi demo">@Html.Icon("x", 16)</button>
-            </div>
 
             <footer class="dashboard-footer">
                 <span>© 2026 Leader Dashboard. Setiap langkah berarti.</span>

@@ -5,7 +5,7 @@ namespace SFD.Services;
 
 public record SFDMemberSource(string Id, string Name, string Area, string Color, string? Phone);
 public record SFDPointSource(double Lat, double Lon, double Speed, double Bearing, DateTime TimeUtc);
-public record SFDRouteSource(string Id, string Name, string Area, List<SFDLatLon> Coordinates, double DemoCovered = 0.7);
+public record SFDRouteSource(string Id, string Name, string Area, List<SFDLatLon> Coordinates);
 
 /// <summary>Turns raw rows into the member and route figures the dashboard displays.</summary>
 public static class SFDTrackingBuilder
@@ -69,7 +69,7 @@ public static class SFDTrackingBuilder
         return result;
     }
 
-    public static List<SFDRouteDto> Routes(IReadOnlyList<SFDRouteSource> routes, IReadOnlyList<SFDMemberDto> members, bool demo)
+    public static List<SFDRouteDto> Routes(IReadOnlyList<SFDRouteSource> routes, IReadOnlyList<SFDMemberDto> members)
     {
         var traces = members
             .SelectMany(m => m.Trace.Skip(1).Select((p, i) => (From: m.Trace[i], To: p)))
@@ -77,7 +77,7 @@ public static class SFDTrackingBuilder
 
         return routes.Select(r =>
         {
-            var segments = SFDGeo.RouteSegments(r.Coordinates, traces, demo, r.DemoCovered);
+            var segments = SFDGeo.RouteSegments(r.Coordinates, traces);
             var total = segments.Sum(s => s.Distance);
             var done = segments.Where(s => s.Covered).Sum(s => s.Distance);
             return new SFDRouteDto(

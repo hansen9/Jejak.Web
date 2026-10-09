@@ -1,4 +1,4 @@
-import { auth, ApiError } from './SFDCommon.js';
+import { auth, ApiError, base } from './SFDCommon.js';
 
 const form = document.getElementById('login-form');
 const error = document.getElementById('login-error');
@@ -23,12 +23,12 @@ form.addEventListener('submit', async event => {
   try {
     await auth.login(form.elements.username.value, password.value);
     // The server only hands out local paths, but the attribute is still checked before navigating.
-    const target = form.dataset.return || '/';
-    location.assign(/^\/(?![/\\])/.test(target) ? target : '/');
+    const target = form.dataset.return || base;
+    location.assign(/^\/(?![/\\])/.test(target) ? target : base);
   } catch (e) {
     if (e instanceof ApiError && e.status === 403) {
       alert('Pengguna ini bukan leader. Hanya leader DMO yang dapat masuk ke Leader Dashboard.');
-      location.replace('/masuk');
+      location.replace(`${base}/masuk`);
       return;
     }
     setError(e instanceof ApiError && e.status === 401 ? 'Username atau kata sandi tidak sesuai.'

@@ -118,7 +118,7 @@
 <body>
     <div id="root">@RenderBody()</div>
     <script>
-        window.SFD = @Json.Serialize(new { user = SFDPagesController.CurrentUser(User), today = SFDTrackingBuilder.Today(), colors = SFDTrackingBuilder.MemberColors });
+        window.SFD = @Json.Serialize(new { user = SFDPagesController.CurrentUser(User), basePath = Url.Content("~/SFD"), today = SFDTrackingBuilder.Today(), colors = SFDTrackingBuilder.MemberColors });
     </script>
     <script src="~/js/SFDIcons.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

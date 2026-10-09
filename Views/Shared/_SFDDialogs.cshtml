@@ -70,7 +70,7 @@
     <div class="locked-action" id="member-locked">
         @Html.Icon("lock-keyhole", 26)
         <h3>Gunakan ruang kerja privat</h3>
-        <p>Anggota demo tidak dapat diubah. Masuk sebagai leader untuk menambahkan anggota yang tersimpan di database Anda.</p>
+        <p>Masuk sebagai leader untuk menambahkan anggota yang tersimpan di database Anda.</p>
         <button class="button-primary" type="button" data-dialog="account">Masuk sebagai leader</button>
     </div>
     <form class="app-form" id="member-form" autocomplete="off">
@@ -99,7 +99,7 @@
     <div class="locked-action" id="import-locked">
         @Html.Icon("lock-keyhole", 26)
         <h3>Simpan ke ruang kerja Anda</h3>
-        <p>Masuk sebagai leader untuk mengimpor data asli. Data demonstrasi tidak akan diubah.</p>
+        <p>Masuk sebagai leader untuk mengimpor data tim Anda.</p>
         <button class="button-primary" type="button" data-dialog="account">Masuk sebagai leader</button>
     </div>
     <form class="app-form" id="import-form">
@@ -136,7 +136,7 @@
         <div>@Html.Icon("radio", 20)<section><h3>Hubungkan data asli</h3><p>Masuk menggunakan akun leader, tambahkan anggota, lalu impor rute GeoJSON atau riwayat GPS CSV. Pembaruan database langsung muncul di dashboard.</p></section></div>
         <div>@Html.Icon("shield-check", 20)<section><h3>Data privat dan izin lokasi</h3><p>Hanya pemilik akun yang dapat melihat data timnya. Pemantauan perangkat memerlukan persetujuan lokasi. Gunakan perangkat hanya dengan izin anggota.</p></section></div>
     </div>
-    <a class="button-primary wide" href="/perangkat">@Html.Icon("smartphone", 17)Buka pengirim GPS perangkat</a>
+    <a class="button-primary wide" href="~/SFD/perangkat">@Html.Icon("smartphone", 17)Buka pengirim GPS perangkat</a>
     <p class="dialog-bottom">GPS browser berjalan saat halaman terbuka, bukan sebagai pelacak latar belakang.</p>
 </dialog>
 
